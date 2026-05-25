@@ -159,7 +159,24 @@ func TestJSONRepoDelete(t *testing.T) {
 }
 
 func TestJSONRepoUpdate(t *testing.T) {
+	f := tempJSONFile(t)
+	businessExpense, _ := expense.NewBusinessExpense(
+		100.50, "EFKA",
+		expense.Date(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)))
+	updatedExpense, _ := expense.NewEntertainmentExpense(
+		25.00, "NETFLIX", expense.Date(time.Date(2020, 2, 1, 0, 0, 0, 0, time.UTC)))
 
+	repo := NewJSONRepo(f)
+	repo.Save(&businessExpense)
+	if err := repo.Update(1, &updatedExpense); err != nil {{
+		t.Errorf("Error in updating")
+	}}
+
+	byteValue, _ := io.ReadAll(f)
+	var expenses []expenseRecord
+	json.Unmarshal(byteValue, &expenses)
+
+	compareRecExpense(t, expenses[0], updatedExpense)
 }
 
 func TestJSONRepoFindByDate(t *testing.T) {

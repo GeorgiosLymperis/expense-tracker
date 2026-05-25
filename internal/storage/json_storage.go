@@ -105,6 +105,26 @@ func UpdateJsonRepoFileOk(file *os.File, r *[]expenseRecord) error {
 	return nil
 }
 
+func (r JSONRepo) Update(id int, e *expense.Expense) error {
+	var expenses []expenseRecord
+
+	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if id > len(expenses) || id < 1 {
+		return fmt.Errorf("Invalid ID. Please provide a valid expense ID [1, %v].", len(expenses))
+	}
+
+	updateRecord := NewExpenseRecord(e)
+	expenses = slices.Delete(expenses, id-1, id)
+	expenses = slices.Insert(expenses, id-1, updateRecord)
+
+	return UpdateJsonRepoFileOk(file, &expenses)
+}
+
 // func (r JSONRepo) FindByCategory(c expense.Category) ([]expense.Expense, error){
 
 // }
