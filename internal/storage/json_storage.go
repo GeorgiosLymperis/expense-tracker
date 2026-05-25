@@ -125,6 +125,29 @@ func (r JSONRepo) Update(id int, e *expense.Expense) error {
 	return UpdateJsonRepoFileOk(file, &expenses)
 }
 
-// func (r JSONRepo) FindByCategory(c expense.Category) ([]expense.Expense, error){
+func (r JSONRepo) FindByCategory(c expense.Category) ([]expense.Expense, error){
+	var expenses []expenseRecord
 
-// }
+	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var expensesInCategory []expense.Expense
+	for _, e := range expenses {
+		if e.Category == c {
+			rec, _ := expense.NewExpense(
+				e.Amount,
+				e.Description,
+				e.Category,
+				e.Date)
+			expensesInCategory = append(expensesInCategory, rec)
+		}
+	}
+	if len(expensesInCategory) == 0 {
+		return expensesInCategory, fmt.Errorf("Category %v not present", c)
+	}
+
+	return expensesInCategory, nil
+}

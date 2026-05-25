@@ -21,7 +21,7 @@ func TestCreationEducationExpense(t *testing.T) {
 	if e.date != Date(day) {
 		t.Errorf("Expected date was 2020-01-01, got %v", e.date)
 	}
-	if e.category != "Education" {
+	if e.category != EDUCATION {
 		t.Errorf("Expected category was Education, got %v", e.category)
 	}
 }
@@ -48,7 +48,7 @@ func TestCreationEntertainmentExpense(t *testing.T) {
 	if e.date != Date(day) {
 		t.Errorf("Expected date was 2020-01-01, got %v", e.date)
 	}
-	if e.category != "Entertainment" {
+	if e.category != ENTERTAINMENT {
 		t.Errorf("Expected category was Entertainment, got %v", e.category)
 	}
 }
@@ -75,7 +75,7 @@ func TestCreationBusinessExpense(t *testing.T) {
 	if e.date != Date(day) {
 		t.Errorf("Expected date was 2020-01-01, got %v", e.date)
 	}
-	if e.category != "Business" {
+	if e.category != BUSINESS {
 		t.Errorf("Expected category was Business, got %v", e.category)
 	}
 }
@@ -111,7 +111,7 @@ func TestExpenseDescription(t *testing.T) {
 
 func TestExpenseCategory(t *testing.T) {
 	e, _ := NewBusinessExpense(10, "Amazon", Date(time.Now()))
-	if e.ExpenseCategory() != "Business" {
+	if e.ExpenseCategory() != BUSINESS {
 		t.Errorf("Expected category was Business, got %v", e.ExpenseCategory())
 	}
 }

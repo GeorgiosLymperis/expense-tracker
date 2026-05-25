@@ -9,9 +9,10 @@ type Category string
 type Date time.Time
 
 const (
-	Education     Category = "Education"
-	Entertainment Category = "Entertainment"
-	Business      Category = "Business"
+	EDUCATION     Category = "Education"
+	ENTERTAINMENT Category = "Entertainment"
+	BUSINESS      Category = "Business"
+	UNKNOWN       Category = "Unknown"
 )
 
 func (d Date) String() string {
@@ -53,7 +54,7 @@ type Expense struct {
 	category    Category
 }
 
-func newExpense(amount float32, description string, category Category, date Date) (Expense, error) {
+func NewExpense(amount float32, description string, category Category, date Date) (Expense, error) {
 	validAmount := validateAmount(amount)
 	if validAmount != nil {
 		return Expense{}, validAmount
@@ -66,15 +67,15 @@ func newExpense(amount float32, description string, category Category, date Date
 }
 
 func NewEducationExpense(amount float32, description string, date Date) (Expense, error) {
-	return newExpense(amount, description, Education, date)
+	return NewExpense(amount, description, EDUCATION, date)
 }
 
 func NewEntertainmentExpense(amount float32, description string, date Date) (Expense, error) {
-	return newExpense(amount, description, Entertainment, date)
+	return NewExpense(amount, description, ENTERTAINMENT, date)
 }
 
 func NewBusinessExpense(amount float32, description string, date Date) (Expense, error) {
-	return newExpense(amount, description, Business, date)
+	return NewExpense(amount, description, BUSINESS, date)
 }
 
 func (e Expense) ExpenseAmount() float32 {

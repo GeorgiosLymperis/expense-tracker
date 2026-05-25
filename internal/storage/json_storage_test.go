@@ -188,7 +188,65 @@ func TestJSONRepoFindByMonth(t *testing.T) {
 }
 
 func TestJSONRepoFindByCategory(t *testing.T) {
+	f := tempJSONFile(t)
 
+	businessExpense, _ := expense.NewBusinessExpense(
+		100.50, "EFKA",
+		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
+
+	educationExpense, _ := expense.NewEducationExpense(
+		60.50, "Coursera",
+		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
+
+	businessExpense_2, _ := expense.NewBusinessExpense(
+		110.50, "BANK",
+		expense.Date(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)))
+
+	repo := NewJSONRepo(f)
+	repo.Save(&educationExpense)
+	repo.Save(&businessExpense)
+	repo.Save(&businessExpense_2)
+
+
+	expenses, err := repo.FindByCategory(expense.BUSINESS)
+	if err != nil {
+		t.Errorf("Error in finding by category: %v", err)
+	}
+
+	compareRecExpense(t, NewExpenseRecord(&businessExpense), expenses[0])
+	compareRecExpense(t, NewExpenseRecord(&businessExpense_2), expenses[1])
+
+}
+
+func TestJSONRepoFindByCategoryNotFound(t *testing.T) {
+	f := tempJSONFile(t)
+
+	businessExpense, _ := expense.NewBusinessExpense(
+		100.50, "EFKA",
+		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
+
+	educationExpense, _ := expense.NewEducationExpense(
+		60.50, "Coursera",
+		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
+
+	businessExpense_2, _ := expense.NewBusinessExpense(
+		110.50, "BANK",
+		expense.Date(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)))
+
+	repo := NewJSONRepo(f)
+	repo.Save(&educationExpense)
+	repo.Save(&businessExpense)
+	repo.Save(&businessExpense_2)
+
+
+	expenses, err := repo.FindByCategory(expense.ENTERTAINMENT)
+
+	if err == nil {
+		t.Errorf("Expected error, got nil")
+	}
+	if len(expenses) != 0 {
+		t.Errorf("Expected no expenses, got %v", len(expenses))
+	}
 }
 
 func TestJSONRepoExport(t *testing.T) {
