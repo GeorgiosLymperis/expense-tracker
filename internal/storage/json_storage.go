@@ -34,19 +34,13 @@ func NewExpenseRecord(e *expense.Expense) expenseRecord {
 }
 
 func (r JSONRepo) Save(e *expense.Expense) error {
-	file, err := os.OpenFile(r.file.Name(), os.O_RDWR|os.O_CREATE, 0644)
+	var expenses []expenseRecord
+
+	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
 	if err != nil {
-		return fmt.Errorf("Error opening file:%v", err)
+		return err
 	}
 	defer file.Close()
-
-	byteValue, err := os.ReadFile(file.Name())
-	if err != nil {
-		return fmt.Errorf("Error reading file:%v", err)
-	}
-
-	var expenses []expenseRecord
-	json.Unmarshal(byteValue, &expenses)
 
 	newRecord := NewExpenseRecord(e)
 	expenses = append(expenses, newRecord)
@@ -54,55 +48,62 @@ func (r JSONRepo) Save(e *expense.Expense) error {
 	slices.SortFunc(expenses, func(a, b expenseRecord) int {
 		return cmp.Compare(a.Date.String(), b.Date.String())
 	})
-	
 
-	encoder := json.NewEncoder(file)
-	err = encoder.Encode(expenses)
-	if err != nil {
-		return fmt.Errorf("Problem in encoding")
-	}
-
-	return nil
+	return UpdateJsonRepoFileOk(file, &expenses)
 }
 
 func (r JSONRepo) Delete(id int) error {
-	file, err := os.OpenFile(r.file.Name(), os.O_RDWR|os.O_CREATE, 0644)
+	var expenses []expenseRecord
+
+	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
 	if err != nil {
-		return fmt.Errorf("Error opening file:%v", err)
+		return err
 	}
 	defer file.Close()
-
-	byteValue, err := os.ReadFile(file.Name())
-	if err != nil {
-		return fmt.Errorf("Error reading file:%v", err)
-	}
-
-	var expenses []expenseRecord
-	json.Unmarshal(byteValue, &expenses)
 
 	if id > len(expenses) || id < 1 {
 		return fmt.Errorf("Invalid ID. Please provide a valid expense ID [1, %v].", len(expenses))
 	}
 	expenses = slices.Delete(expenses, id-1, id)
 
-	if err:= file.Truncate(0); err != nil {
+	return UpdateJsonRepoFileOk(file, &expenses)
+}
+
+func OpenJsonRepoFile(name string, r *[]expenseRecord) (*os.File, error) {
+	file, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("Error opening file:%v", err)
+	}
+
+	byteValue, err := os.ReadFile(file.Name())
+	if err != nil {
+		return nil, fmt.Errorf("Error reading file:%v", err)
+	}
+
+	if len(byteValue) != 0 {
+		if err := json.Unmarshal(byteValue, &r); err != nil {
+			return nil, fmt.Errorf("Error unmarshalling:%v", err)
+		}
+	}
+	return file, nil
+}
+
+func UpdateJsonRepoFileOk(file *os.File, r *[]expenseRecord) error {
+	if err := file.Truncate(0); err != nil {
 		return fmt.Errorf("Error truncating file:%v", err)
 	}
-	
+
 	if _, err := file.Seek(0, 0); err != nil {
 		return fmt.Errorf("Error seeking file:%v", err)
 	}
 
 	encoder := json.NewEncoder(file)
-	
-	if err = encoder.Encode(expenses); err != nil {
+	if err := encoder.Encode(r); err != nil {
 		return fmt.Errorf("Problem in encoding")
 	}
 
 	return nil
 }
-
-// func openFile
 
 // func (r JSONRepo) FindByCategory(c expense.Category) ([]expense.Expense, error){
 
