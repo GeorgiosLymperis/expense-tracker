@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"expense-tracker/internal/expense"
 	"io"
@@ -37,10 +38,23 @@ func tempJSONFile(t *testing.T) *os.File {
 	return f
 }
 
+func tempCSVFile(t *testing.T) *os.File {
+	t.Helper()
+	f, err := os.CreateTemp("", "example-*.csv")
+	if err != nil {
+		t.Fatal("could not create temporary file")
+	}
+	t.Cleanup(func() {
+		f.Close()
+		os.Remove(f.Name())
+	})
+	return f
+}
+
 func TestNewJSONRepo(t *testing.T) {
 	f := tempJSONFile(t)
 	repo := NewJSONRepo(f)
-	if repo.file != f {
+	if repo.GetFile() != f {
 		t.Errorf("Repo file should be the same with temp")
 	}
 }
@@ -333,5 +347,58 @@ func TestJSONRepoFindByCategoryNotFound(t *testing.T) {
 }
 
 func TestJSONRepoExport(t *testing.T) {
+	f := tempJSONFile(t)
 
+	businessExpense, _ := expense.NewBusinessExpense(
+		100.50, "EFKA",
+		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
+
+	repo := NewJSONRepo(f)
+	repo.Save(&businessExpense)
+
+	c := tempCSVFile(t)
+	if err := repo.ExportCSV(c); err != nil {
+		t.Fatalf("Could not export to CSV: %v", err)
+	}
+	c.Seek(0, 0)
+	r := csv.NewReader(c)
+
+	header, err := r.Read()
+	if err != nil {
+		t.Fatalf("Could not read header: %v", err)
+	}
+
+	if header[0] != "Date" {
+		t.Errorf("Expected header to be Date, got %v", header[0])
+	}
+	if header[1] != "Category" {
+		t.Errorf("Expected header to be Category, got %v", header[1])
+	}
+	if header[2] != "Description" {
+		t.Errorf("Expected header to be Description, got %v", header[2])
+	}
+	if header[3] != "Amount" {
+		t.Errorf("Expected header to be Amount, got %v", header[3])
+	}
+
+	row, err := r.Read()
+	if err != nil {
+		t.Fatalf("Could not read row: %v", err)
+	}
+
+	if row[0] != "2023-01-01" {
+		t.Errorf("Expected date to be 2023-01-01, got %v", row[0])
+	}
+
+	if row[1] != "Business" {
+		t.Errorf("Expected category to be Business, got %v", row[1])
+	}
+
+	if row[2] != "EFKA" {
+		t.Errorf("Expected description to be EFKA, got %v", row[2])
+	}
+
+	if row[3] != "100.5" {
+		t.Errorf("Expected amount to be 100.5, got %v", row[3])
+	}
 }
