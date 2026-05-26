@@ -1,6 +1,9 @@
 package expense
 
-import "time"
+import (
+	"os"
+	"time"
+)
 
 type Repository interface {
 	Save(e *Expense) error
@@ -10,5 +13,5 @@ type Repository interface {
 	FindByMonth(month time.Month) ([]Expense, error)
 	FindByYear(year int) ([]Expense, error)
 	FindByCategory(category Category) ([]Expense, error)
-	Export(filetype string) error
+	ExportCSV(file *os.File) error
 }

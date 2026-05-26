@@ -2,11 +2,13 @@ package storage
 
 import (
 	"cmp"
+	"encoding/csv"
 	"encoding/json"
 	"expense-tracker/internal/expense"
 	"fmt"
 	"os"
 	"slices"
+	"strconv"
 	"time"
 )
 
@@ -232,4 +234,28 @@ func (r JSONRepo) FindByDate(d expense.Date) ([]expense.Expense, error) {
 	}
 
 	return expensesInDate, nil
+}
+
+func (r JSONRepo) ExportCSV(f *os.File) error {
+	var expenses []expenseRecord
+
+	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	w := csv.NewWriter(f)
+	if err := w.Write([]string{"Date", "Category", "Description", "Amount"}); err != nil {
+		return nil
+	}
+
+	for _, e := range expenses {
+		if err := w.Write([]string{e.Date.String(), string(e.Category),
+			e.Description, strconv.FormatFloat(float64(e.Amount), 'f', -1, 32)}); err != nil {
+			return err
+		}
+	}
+	w.Flush()
+	return w.Error()
 }
