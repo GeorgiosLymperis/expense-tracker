@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"time"
 )
 
 type JSONRepo struct {
@@ -150,4 +151,31 @@ func (r JSONRepo) FindByCategory(c expense.Category) ([]expense.Expense, error){
 	}
 
 	return expensesInCategory, nil
+}
+
+func (r JSONRepo) FindByMonth(m time.Month) ([]expense.Expense, error) {
+	var expenses []expenseRecord
+
+	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var expensesInMonth []expense.Expense
+	for _, e := range expenses {
+		if e.Date.Month() == m {
+			rec, _ := expense.NewExpense(
+				e.Amount,
+				e.Description,
+				e.Category,
+				e.Date)
+			expensesInMonth = append(expensesInMonth, rec)
+		}
+	}
+	if len(expensesInMonth) == 0 {
+		return expensesInMonth, fmt.Errorf("Month %v not present", m)
+	}
+
+	return expensesInMonth, nil
 }

@@ -32,6 +32,10 @@ func (d *Date) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (d Date) Month() time.Month {
+	return time.Time(d).Month()
+}
+
 type NegativeAmountError struct {
 	amount float32
 }
