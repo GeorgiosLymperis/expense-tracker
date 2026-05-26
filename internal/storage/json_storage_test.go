@@ -402,3 +402,33 @@ func TestJSONRepoExport(t *testing.T) {
 		t.Errorf("Expected amount to be 100.5, got %v", row[3])
 	}
 }
+
+func TestListAll(t *testing.T) {
+	f := tempJSONFile(t)
+
+	businessExpense, _ := expense.NewBusinessExpense(
+		100.50, "EFKA",
+		expense.Date(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)))
+
+	educationExpense, _ := expense.NewEducationExpense(
+		60.50, "Coursera",
+		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
+
+	businessExpense_2, _ := expense.NewBusinessExpense(
+		110.50, "BANK",
+		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
+
+	repo := NewJSONRepo(f)
+	repo.Save(&educationExpense)
+	repo.Save(&businessExpense)
+	repo.Save(&businessExpense_2)
+
+	expenses, err := repo.ListAll()
+	if err != nil {
+		t.Errorf("Error in finding by month")
+	}
+
+	compareRecExpense(t, NewExpenseRecord(&businessExpense_2), expenses[0])
+	compareRecExpense(t, NewExpenseRecord(&educationExpense), expenses[1])
+	compareRecExpense(t, NewExpenseRecord(&businessExpense), expenses[2])
+}

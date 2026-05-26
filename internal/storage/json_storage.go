@@ -263,3 +263,24 @@ func (r JSONRepo) ExportCSV(f *os.File) error {
 	w.Flush()
 	return w.Error()
 }
+
+func (f JSONRepo) ListAll() ([]expense.Expense, error) {
+	var expenses []expenseRecord
+
+	file, err := OpenJsonRepoFile(f.file.Name(), &expenses)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var allExpenses []expense.Expense
+	for _, e := range expenses {
+		rec, _ := expense.NewExpense(
+			e.Amount,
+			e.Description,
+			e.Category,
+			e.Date)
+		allExpenses = append(allExpenses, rec)
+	}
+	return allExpenses, nil
+}
