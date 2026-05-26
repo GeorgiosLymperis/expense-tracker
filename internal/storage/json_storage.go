@@ -179,3 +179,30 @@ func (r JSONRepo) FindByMonth(m time.Month) ([]expense.Expense, error) {
 
 	return expensesInMonth, nil
 }
+
+func (r JSONRepo) FindByYear(y int) ([]expense.Expense, error) {
+	var expenses []expenseRecord
+
+	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var expensesInYear []expense.Expense
+	for _, e := range expenses {
+		if e.Date.Year() == y {
+			rec, _ := expense.NewExpense(
+				e.Amount,
+				e.Description,
+				e.Category,
+				e.Date)
+			expensesInYear = append(expensesInYear, rec)
+		}
+	}
+	if len(expensesInYear) == 0 {
+		return expensesInYear, fmt.Errorf("Year %v not present", y)
+	}
+
+	return expensesInYear, nil
+}

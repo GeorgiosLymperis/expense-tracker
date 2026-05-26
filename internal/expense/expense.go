@@ -36,6 +36,10 @@ func (d Date) Month() time.Month {
 	return time.Time(d).Month()
 }
 
+func (d Date) Year() int {
+	return time.Time(d).Year()
+}
+
 type NegativeAmountError struct {
 	amount float32
 }
