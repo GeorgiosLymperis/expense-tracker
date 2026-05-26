@@ -16,8 +16,12 @@ type JSONRepo struct {
 	file *os.File
 }
 
-func NewJSONRepo(f *os.File) JSONRepo {
+func NewJSONRepo(f *os.File) expense.Repository {
 	return JSONRepo{file: f}
+}
+
+func (r JSONRepo) GetFile() *os.File {
+	return r.file
 }
 
 type expenseRecord struct {

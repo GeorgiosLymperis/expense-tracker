@@ -54,7 +54,7 @@ func tempCSVFile(t *testing.T) *os.File {
 func TestNewJSONRepo(t *testing.T) {
 	f := tempJSONFile(t)
 	repo := NewJSONRepo(f)
-	if repo.file != f {
+	if repo.GetFile() != f {
 		t.Errorf("Repo file should be the same with temp")
 	}
 }
