@@ -33,37 +33,50 @@ func NewService(r Repository) Service {
 }
 
 func (s service) SaveExpense(amount float32, description string, category Category, date Date) error {
-	return nil
+	e, err := NewExpense(amount, description, category, date)
+	if err != nil {
+		return err
+	}
+	return s.repo.Save(&e)
 }
 
 func (s service) UpdateExpense(id int, amount float32, description string, category Category, date Date) error {
-	return nil
+	e, err := NewExpense(amount, description, category, date)
+	if err != nil {
+		return err
+	}
+
+	return s.repo.Update(id, &e)
 }
 
 func (s service) DeleteExpense(id int) error {
-	return nil
+	return s.repo.Delete(id)
 }
 
 func (s service) ListAll() ([]Expense, error) {
-	return []Expense{}, nil
+	return s.repo.ListAll()
 }
 
 func (s service) ListByCategory(category Category) ([]Expense, error) {
-	return []Expense{}, nil
+	return s.repo.FindByCategory(category)
 }
 
 func (s service) ListByMonth(month time.Month) ([]Expense, error) {
-	return []Expense{}, nil
+	return s.repo.FindByMonth(month)
 }
 
 func (s service) ListByYear(year int) ([]Expense, error) {
-	return []Expense{}, nil
+	return s.repo.FindByYear(year)
 }
 
 func (s service) ExportCSV(file *os.File) error {
-	return nil
+	return s.repo.ExportCSV(file)
 }
 
 func (s service) TotalExpense(e *[]Expense) float32 {
-	return 0.0
+	var sum float32 = 0
+	for _, expense := range *e {
+		sum += expense.ExpenseAmount()
+	}
+	return sum
 }

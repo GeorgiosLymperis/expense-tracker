@@ -9,6 +9,7 @@ type Repository interface {
 	Save(e *Expense) error
 	Delete(id int) error
 	Update(id int, e *Expense) error
+	ListAll() ([]Expense, error)
 	FindByDate(date Date) ([]Expense, error)
 	FindByMonth(month time.Month) ([]Expense, error)
 	FindByYear(year int) ([]Expense, error)
