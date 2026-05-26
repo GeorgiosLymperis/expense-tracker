@@ -14,4 +14,5 @@ type Repository interface {
 	FindByYear(year int) ([]Expense, error)
 	FindByCategory(category Category) ([]Expense, error)
 	ExportCSV(file *os.File) error
+	GetFile() *os.File
 }
