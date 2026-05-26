@@ -126,7 +126,7 @@ func (r JSONRepo) Update(id int, e *expense.Expense) error {
 	return UpdateJsonRepoFileOk(file, &expenses)
 }
 
-func (r JSONRepo) FindByCategory(c expense.Category) ([]expense.Expense, error){
+func (r JSONRepo) FindByCategory(c expense.Category) ([]expense.Expense, error) {
 	var expenses []expenseRecord
 
 	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
@@ -205,4 +205,31 @@ func (r JSONRepo) FindByYear(y int) ([]expense.Expense, error) {
 	}
 
 	return expensesInYear, nil
+}
+
+func (r JSONRepo) FindByDate(d expense.Date) ([]expense.Expense, error) {
+	var expenses []expenseRecord
+
+	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var expensesInDate []expense.Expense
+	for _, e := range expenses {
+		if e.Date == d {
+			rec, _ := expense.NewExpense(
+				e.Amount,
+				e.Description,
+				e.Category,
+				e.Date)
+			expensesInDate = append(expensesInDate, rec)
+		}
+	}
+	if len(expensesInDate) == 0 {
+		return expensesInDate, fmt.Errorf("Date %v not present", d)
+	}
+
+	return expensesInDate, nil
 }
