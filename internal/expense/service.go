@@ -1,6 +1,7 @@
 package expense
 
 import (
+	"fmt"
 	"os"
 	"time"
 )
@@ -22,6 +23,7 @@ type Service interface {
 
 	// helpers
 	TotalExpense(expense *[]Expense) float32
+	PrintExpenses(expenses *[]Expense) error
 }
 
 type service struct {
@@ -79,4 +81,15 @@ func (s service) TotalExpense(e *[]Expense) float32 {
 		sum += expense.ExpenseAmount()
 	}
 	return sum
+}
+
+func (s service) PrintExpenses(expenses *[]Expense) error {
+	for i, e := range *expenses {
+		fmt.Printf("| ID: %d | %v | %v | %v | %.2f |\n", i+1, e.ExpenseDate(),
+			e.ExpenseCategory(), e.ExpenseDescription(), e.ExpenseAmount())
+	}
+
+	fmt.Println()
+	fmt.Println("Total Amount: ", s.TotalExpense(expenses))
+	return nil
 }

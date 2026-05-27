@@ -40,6 +40,14 @@ func (d Date) Year() int {
 	return time.Time(d).Year()
 }
 
+func ParseDate(str string) (Date, error) {
+	strTime, err := time.Parse("2006-01-02", str)
+	if err != nil {
+		return Date{}, fmt.Errorf("Error parsing date: %v", err)
+	}
+	return Date(strTime), nil
+}
+
 type NegativeAmountError struct {
 	amount float32
 }
