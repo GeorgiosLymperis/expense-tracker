@@ -16,12 +16,8 @@ type JSONRepo struct {
 	file *os.File
 }
 
-func NewJSONRepo(f *os.File) expense.Repository {
-	return JSONRepo{file: f}
-}
-
-func (r JSONRepo) GetFile() *os.File {
-	return r.file
+func NewJSONRepo(f *os.File) *JSONRepo {
+	return &JSONRepo{file: f}
 }
 
 type expenseRecord struct {
@@ -31,7 +27,7 @@ type expenseRecord struct {
 	Category    expense.Category `json:"category"`
 }
 
-func NewExpenseRecord(e *expense.Expense) expenseRecord {
+func newExpenseRecord(e *expense.Expense) expenseRecord {
 	return expenseRecord{
 		Amount:      e.ExpenseAmount(),
 		Date:        e.ExpenseDate(),
@@ -40,29 +36,29 @@ func NewExpenseRecord(e *expense.Expense) expenseRecord {
 	}
 }
 
-func (r JSONRepo) Save(e *expense.Expense) error {
+func (r *JSONRepo) Add(e *expense.Expense) error {
 	var expenses []expenseRecord
 
-	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	file, err := openJsonRepoFile(r.file.Name(), &expenses)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	newRecord := NewExpenseRecord(e)
+	newRecord := newExpenseRecord(e)
 	expenses = append(expenses, newRecord)
 
 	slices.SortFunc(expenses, func(a, b expenseRecord) int {
 		return cmp.Compare(a.Date.String(), b.Date.String())
 	})
 
-	return UpdateJsonRepoFileOk(file, &expenses)
+	return updateJsonRepoFileOk(file, &expenses)
 }
 
-func (r JSONRepo) Delete(id int) error {
+func (r *JSONRepo) Delete(id int) error {
 	var expenses []expenseRecord
 
-	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	file, err := openJsonRepoFile(r.file.Name(), &expenses)
 	if err != nil {
 		return err
 	}
@@ -73,10 +69,10 @@ func (r JSONRepo) Delete(id int) error {
 	}
 	expenses = slices.Delete(expenses, id-1, id)
 
-	return UpdateJsonRepoFileOk(file, &expenses)
+	return updateJsonRepoFileOk(file, &expenses)
 }
 
-func OpenJsonRepoFile(name string, r *[]expenseRecord) (*os.File, error) {
+func openJsonRepoFile(name string, r *[]expenseRecord) (*os.File, error) {
 	file, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("Error opening file:%v", err)
@@ -95,7 +91,7 @@ func OpenJsonRepoFile(name string, r *[]expenseRecord) (*os.File, error) {
 	return file, nil
 }
 
-func UpdateJsonRepoFileOk(file *os.File, r *[]expenseRecord) error {
+func updateJsonRepoFileOk(file *os.File, r *[]expenseRecord) error {
 	if err := file.Truncate(0); err != nil {
 		return fmt.Errorf("Error truncating file:%v", err)
 	}
@@ -106,16 +102,16 @@ func UpdateJsonRepoFileOk(file *os.File, r *[]expenseRecord) error {
 
 	encoder := json.NewEncoder(file)
 	if err := encoder.Encode(r); err != nil {
-		return fmt.Errorf("Problem in encoding")
+		return fmt.Errorf("Problem in encoding: %v", err)
 	}
 
 	return nil
 }
 
-func (r JSONRepo) Update(id int, e *expense.Expense) error {
+func (r *JSONRepo) Update(id int, e *expense.Expense) error {
 	var expenses []expenseRecord
 
-	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	file, err := openJsonRepoFile(r.file.Name(), &expenses)
 	if err != nil {
 		return err
 	}
@@ -125,17 +121,14 @@ func (r JSONRepo) Update(id int, e *expense.Expense) error {
 		return fmt.Errorf("Invalid ID. Please provide a valid expense ID [1, %v].", len(expenses))
 	}
 
-	updateRecord := NewExpenseRecord(e)
-	expenses = slices.Delete(expenses, id-1, id)
-	expenses = slices.Insert(expenses, id-1, updateRecord)
-
-	return UpdateJsonRepoFileOk(file, &expenses)
+	expenses[id-1] = newExpenseRecord(e)
+	return updateJsonRepoFileOk(file, &expenses)
 }
 
-func (r JSONRepo) FindByCategory(c expense.Category) ([]expense.Expense, error) {
+func (r *JSONRepo) ListByCategory(c expense.Category) ([]expense.Expense, error) {
 	var expenses []expenseRecord
 
-	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	file, err := openJsonRepoFile(r.file.Name(), &expenses)
 	if err != nil {
 		return nil, err
 	}
@@ -144,11 +137,14 @@ func (r JSONRepo) FindByCategory(c expense.Category) ([]expense.Expense, error) 
 	var expensesInCategory []expense.Expense
 	for _, e := range expenses {
 		if e.Category == c {
-			rec, _ := expense.NewExpense(
+			rec, err := expense.NewExpense(
 				e.Amount,
 				e.Description,
 				e.Category,
 				e.Date)
+			if err != nil {
+				return nil, err
+			}
 			expensesInCategory = append(expensesInCategory, rec)
 		}
 	}
@@ -159,10 +155,10 @@ func (r JSONRepo) FindByCategory(c expense.Category) ([]expense.Expense, error) 
 	return expensesInCategory, nil
 }
 
-func (r JSONRepo) FindByMonth(m time.Month) ([]expense.Expense, error) {
+func (r *JSONRepo) ListByMonth(m time.Month, y int) ([]expense.Expense, error) {
 	var expenses []expenseRecord
 
-	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	file, err := openJsonRepoFile(r.file.Name(), &expenses)
 	if err != nil {
 		return nil, err
 	}
@@ -170,12 +166,15 @@ func (r JSONRepo) FindByMonth(m time.Month) ([]expense.Expense, error) {
 
 	var expensesInMonth []expense.Expense
 	for _, e := range expenses {
-		if e.Date.Month() == m {
-			rec, _ := expense.NewExpense(
+		if e.Date.Month() == m && e.Date.Year() == y {
+			rec, err := expense.NewExpense(
 				e.Amount,
 				e.Description,
 				e.Category,
 				e.Date)
+			if err != nil {
+				return nil, err
+			}
 			expensesInMonth = append(expensesInMonth, rec)
 		}
 	}
@@ -186,10 +185,10 @@ func (r JSONRepo) FindByMonth(m time.Month) ([]expense.Expense, error) {
 	return expensesInMonth, nil
 }
 
-func (r JSONRepo) FindByYear(y int) ([]expense.Expense, error) {
+func (r *JSONRepo) ListByYear(y int) ([]expense.Expense, error) {
 	var expenses []expenseRecord
 
-	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	file, err := openJsonRepoFile(r.file.Name(), &expenses)
 	if err != nil {
 		return nil, err
 	}
@@ -198,11 +197,14 @@ func (r JSONRepo) FindByYear(y int) ([]expense.Expense, error) {
 	var expensesInYear []expense.Expense
 	for _, e := range expenses {
 		if e.Date.Year() == y {
-			rec, _ := expense.NewExpense(
+			rec, err := expense.NewExpense(
 				e.Amount,
 				e.Description,
 				e.Category,
 				e.Date)
+			if err != nil {
+				return nil, err
+			}
 			expensesInYear = append(expensesInYear, rec)
 		}
 	}
@@ -213,10 +215,10 @@ func (r JSONRepo) FindByYear(y int) ([]expense.Expense, error) {
 	return expensesInYear, nil
 }
 
-func (r JSONRepo) FindByDate(d expense.Date) ([]expense.Expense, error) {
+func (r *JSONRepo) ListByDate(d expense.Date) ([]expense.Expense, error) {
 	var expenses []expenseRecord
 
-	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	file, err := openJsonRepoFile(r.file.Name(), &expenses)
 	if err != nil {
 		return nil, err
 	}
@@ -225,11 +227,14 @@ func (r JSONRepo) FindByDate(d expense.Date) ([]expense.Expense, error) {
 	var expensesInDate []expense.Expense
 	for _, e := range expenses {
 		if e.Date == d {
-			rec, _ := expense.NewExpense(
+			rec, err := expense.NewExpense(
 				e.Amount,
 				e.Description,
 				e.Category,
 				e.Date)
+			if err != nil {
+				return nil, err
+			}
 			expensesInDate = append(expensesInDate, rec)
 		}
 	}
@@ -240,10 +245,10 @@ func (r JSONRepo) FindByDate(d expense.Date) ([]expense.Expense, error) {
 	return expensesInDate, nil
 }
 
-func (r JSONRepo) ExportCSV(f *os.File) error {
+func (r *JSONRepo) ExportCSV(f *os.File) error {
 	var expenses []expenseRecord
 
-	file, err := OpenJsonRepoFile(r.file.Name(), &expenses)
+	file, err := openJsonRepoFile(r.file.Name(), &expenses)
 	if err != nil {
 		return err
 	}
@@ -251,7 +256,7 @@ func (r JSONRepo) ExportCSV(f *os.File) error {
 
 	w := csv.NewWriter(f)
 	if err := w.Write([]string{"Date", "Category", "Description", "Amount"}); err != nil {
-		return nil
+		return err
 	}
 
 	for _, e := range expenses {
@@ -264,10 +269,10 @@ func (r JSONRepo) ExportCSV(f *os.File) error {
 	return w.Error()
 }
 
-func (f JSONRepo) ListAll() ([]expense.Expense, error) {
+func (r *JSONRepo) ListAll() ([]expense.Expense, error) {
 	var expenses []expenseRecord
 
-	file, err := OpenJsonRepoFile(f.file.Name(), &expenses)
+	file, err := openJsonRepoFile(r.file.Name(), &expenses)
 	if err != nil {
 		return nil, err
 	}
@@ -275,11 +280,14 @@ func (f JSONRepo) ListAll() ([]expense.Expense, error) {
 
 	var allExpenses []expense.Expense
 	for _, e := range expenses {
-		rec, _ := expense.NewExpense(
+		rec, err := expense.NewExpense(
 			e.Amount,
 			e.Description,
 			e.Category,
 			e.Date)
+		if err != nil {
+			return nil, err
+		}
 		allExpenses = append(allExpenses, rec)
 	}
 	return allExpenses, nil

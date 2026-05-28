@@ -4,6 +4,7 @@ import (
 	"expense-tracker/internal/cli"
 	"expense-tracker/internal/expense"
 	"expense-tracker/internal/storage"
+	"fmt"
 	"os"
 )
 
@@ -13,22 +14,29 @@ const csvFile = "expenses.csv"
 func main() {
 	repoFile, err := os.OpenFile(jsonFile, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, "Error:", err)
+    	os.Exit(1)
 	}
 	defer repoFile.Close()
 	svc := expense.NewService(storage.NewJSONRepo(repoFile))
+	if len(os.Args) < 2 {
+		panic("no command provided")
+	}
 	if os.Args[1] == "export" {
 		f, err := os.Create(csvFile)
 		if err != nil {
-			panic(err)
+			fmt.Fprintln(os.Stderr, "Error:", err)
+    	os.Exit(1)
 		}
 		defer f.Close()
 		if err := svc.ExportCSV(f); err != nil {
-			panic(err)
+			fmt.Fprintln(os.Stderr, "Error:", err)
+    	os.Exit(1)
 		}
 		return
 	}
 	if err := cli.Run(svc, os.Args[1:]); err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		os.Exit(1)
 	}
 }

@@ -12,8 +12,47 @@ const (
 	EDUCATION     Category = "Education"
 	ENTERTAINMENT Category = "Entertainment"
 	BUSINESS      Category = "Business"
+	FOOD          Category = "Food"
+	TRANSPORT     Category = "Transport"
+	HOUSING       Category = "Housing"
+	HEALTH        Category = "Health"
+	CLOTHING      Category = "Clothing"
+	UTILITIES     Category = "Utilities"
+	TRAVEL        Category = "Travel"
+	SUBSCRIPTIONS Category = "Subscriptions"
+	SAVINGS       Category = "Savings"
+	GIFTS         Category = "Gifts"
 	UNKNOWN       Category = "Unknown"
 )
+
+var validCategories = map[Category]bool{
+	EDUCATION:     true,
+	ENTERTAINMENT: true,
+	BUSINESS:      true,
+	FOOD:          true,
+	TRANSPORT:     true,
+	HOUSING:       true,
+	HEALTH:        true,
+	CLOTHING:      true,
+	UTILITIES:     true,
+	TRAVEL:        true,
+	SUBSCRIPTIONS: true,
+	SAVINGS:       true,
+	GIFTS:         true,
+	UNKNOWN:       true,
+}
+
+func (c Category) IsValid() bool {
+	return validCategories[c]
+}
+
+func ValidCategories() []Category {
+	cats := make([]Category, 0, len(validCategories))
+	for c := range validCategories {
+		cats = append(cats, c)
+	}
+	return cats
+}
 
 func (d Date) String() string {
 	return time.Time(d).Format("2006-01-02")
@@ -82,17 +121,6 @@ func NewExpense(amount float32, description string, category Category, date Date
 		category:    category}, nil
 }
 
-func NewEducationExpense(amount float32, description string, date Date) (Expense, error) {
-	return NewExpense(amount, description, EDUCATION, date)
-}
-
-func NewEntertainmentExpense(amount float32, description string, date Date) (Expense, error) {
-	return NewExpense(amount, description, ENTERTAINMENT, date)
-}
-
-func NewBusinessExpense(amount float32, description string, date Date) (Expense, error) {
-	return NewExpense(amount, description, BUSINESS, date)
-}
 
 func (e Expense) ExpenseAmount() float32 {
 	return e.amount
