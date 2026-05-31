@@ -8,7 +8,7 @@ import (
 
 func TestNewExpense(t *testing.T) {
 	day := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
-	e, err := NewExpense(10, "Coursera", EDUCATION, Date(day))
+	e, err := NewExpense(10, "Coursera", Education, Date(day))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -21,20 +21,20 @@ func TestNewExpense(t *testing.T) {
 	if e.date != Date(day) {
 		t.Errorf("expected date 2020-01-01, got %v", e.date)
 	}
-	if e.category != EDUCATION {
+	if e.category != Education {
 		t.Errorf("expected category Education, got %v", e.category)
 	}
 }
 
 func TestNewExpenseNegativeAmount(t *testing.T) {
-	_, err := NewExpense(-10, "Coursera", EDUCATION, Date(time.Now()))
+	_, err := NewExpense(-10, "Coursera", Education, Date(time.Now()))
 	if err == nil {
 		t.Error("expected error for negative amount, got nil")
 	}
 }
 
 func TestExpenseAmount(t *testing.T) {
-	e, _ := NewExpense(10, "Amazon", BUSINESS, Date(time.Now()))
+	e, _ := NewExpense(10, "Amazon", Business, Date(time.Now()))
 	if e.ExpenseAmount() != 10 {
 		t.Errorf("expected amount 10, got %v", e.ExpenseAmount())
 	}
@@ -42,29 +42,29 @@ func TestExpenseAmount(t *testing.T) {
 
 func TestExpenseDate(t *testing.T) {
 	day := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
-	e, _ := NewExpense(10, "Amazon", BUSINESS, Date(day))
+	e, _ := NewExpense(10, "Amazon", Business, Date(day))
 	if e.ExpenseDate() != Date(day) {
 		t.Errorf("expected date 2020-01-01, got %v", e.ExpenseDate())
 	}
 }
 
 func TestExpenseDescription(t *testing.T) {
-	e, _ := NewExpense(10, "Amazon", BUSINESS, Date(time.Now()))
+	e, _ := NewExpense(10, "Amazon", Business, Date(time.Now()))
 	if e.ExpenseDescription() != "Amazon" {
 		t.Errorf("expected description 'Amazon', got %v", e.ExpenseDescription())
 	}
 }
 
 func TestExpenseCategory(t *testing.T) {
-	e, _ := NewExpense(10, "Amazon", BUSINESS, Date(time.Now()))
-	if e.ExpenseCategory() != BUSINESS {
+	e, _ := NewExpense(10, "Amazon", Business, Date(time.Now()))
+	if e.ExpenseCategory() != Business {
 		t.Errorf("expected category Business, got %v", e.ExpenseCategory())
 	}
 }
 
 func TestCategoryIsValid(t *testing.T) {
-	if !EDUCATION.IsValid() {
-		t.Error("expected EDUCATION to be valid")
+	if !Education.IsValid() {
+		t.Error("expected Education to be valid")
 	}
 	if Category("InvalidCategory").IsValid() {
 		t.Error("expected 'InvalidCategory' to be invalid")

@@ -61,7 +61,7 @@ func TestNewJSONRepo(t *testing.T) {
 
 func TestJSONRepoAdd(t *testing.T) {
 	f := tempJSONFile(t)
-	e, _ := expense.NewExpense(100.50, "EFKA", expense.BUSINESS,
+	e, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
 		expense.Date(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -78,9 +78,9 @@ func TestJSONRepoAdd(t *testing.T) {
 
 func TestJSONRepoAddOlderYearIsLast(t *testing.T) {
 	f := tempJSONFile(t)
-	old, _ := expense.NewExpense(100.50, "EFKA", expense.BUSINESS,
+	old, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
 		expense.Date(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)))
-	newer, _ := expense.NewExpense(60.50, "Coursera", expense.EDUCATION,
+	newer, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 3, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -96,9 +96,9 @@ func TestJSONRepoAddOlderYearIsLast(t *testing.T) {
 
 func TestJSONRepoAddOlderMonthIsLast(t *testing.T) {
 	f := tempJSONFile(t)
-	old, _ := expense.NewExpense(100.50, "EFKA", expense.BUSINESS,
+	old, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
-	newer, _ := expense.NewExpense(60.50, "Coursera", expense.EDUCATION,
+	newer, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 3, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -114,9 +114,9 @@ func TestJSONRepoAddOlderMonthIsLast(t *testing.T) {
 
 func TestJSONRepoAddOlderDayIsLast(t *testing.T) {
 	f := tempJSONFile(t)
-	old, _ := expense.NewExpense(100.50, "EFKA", expense.BUSINESS,
+	old, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
-	newer, _ := expense.NewExpense(60.50, "Coursera", expense.EDUCATION,
+	newer, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 3, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -132,9 +132,9 @@ func TestJSONRepoAddOlderDayIsLast(t *testing.T) {
 
 func TestJSONRepoDelete(t *testing.T) {
 	f := tempJSONFile(t)
-	old, _ := expense.NewExpense(100.50, "EFKA", expense.BUSINESS,
+	old, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
-	newer, _ := expense.NewExpense(60.50, "Coursera", expense.EDUCATION,
+	newer, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 3, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -154,9 +154,9 @@ func TestJSONRepoDelete(t *testing.T) {
 
 func TestJSONRepoUpdate(t *testing.T) {
 	f := tempJSONFile(t)
-	e, _ := expense.NewExpense(100.50, "EFKA", expense.BUSINESS,
+	e, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
 		expense.Date(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)))
-	updated, _ := expense.NewExpense(25.00, "NETFLIX", expense.ENTERTAINMENT,
+	updated, _ := expense.NewExpense(25.00, "NETFLIX", expense.Entertainment,
 		expense.Date(time.Date(2020, 2, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -174,11 +174,11 @@ func TestJSONRepoUpdate(t *testing.T) {
 
 func TestJSONRepoListByDate(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(100.50, "EFKA", expense.BUSINESS,
+	e1, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
 		expense.Date(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e2, _ := expense.NewExpense(60.50, "Coursera", expense.EDUCATION,
+	e2, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
-	e3, _ := expense.NewExpense(110.50, "BANK", expense.BUSINESS,
+	e3, _ := expense.NewExpense(110.50, "BANK", expense.Business,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -201,11 +201,11 @@ func TestJSONRepoListByDate(t *testing.T) {
 
 func TestJSONRepoListByMonth(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(100.50, "EFKA", expense.BUSINESS,
+	e1, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e2, _ := expense.NewExpense(60.50, "Coursera", expense.EDUCATION,
+	e2, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
-	e3, _ := expense.NewExpense(110.50, "BANK", expense.BUSINESS,
+	e3, _ := expense.NewExpense(110.50, "BANK", expense.Business,
 		expense.Date(time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -223,11 +223,11 @@ func TestJSONRepoListByMonth(t *testing.T) {
 
 func TestJSONRepoListByYear(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(100.50, "EFKA", expense.BUSINESS,
+	e1, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e2, _ := expense.NewExpense(60.50, "Coursera", expense.EDUCATION,
+	e2, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
-	e3, _ := expense.NewExpense(110.50, "BANK", expense.BUSINESS,
+	e3, _ := expense.NewExpense(110.50, "BANK", expense.Business,
 		expense.Date(time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -246,11 +246,11 @@ func TestJSONRepoListByYear(t *testing.T) {
 
 func TestJSONRepoListByCategory(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(100.50, "EFKA", expense.BUSINESS,
+	e1, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e2, _ := expense.NewExpense(60.50, "Coursera", expense.EDUCATION,
+	e2, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e3, _ := expense.NewExpense(110.50, "BANK", expense.BUSINESS,
+	e3, _ := expense.NewExpense(110.50, "BANK", expense.Business,
 		expense.Date(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -258,7 +258,7 @@ func TestJSONRepoListByCategory(t *testing.T) {
 	repo.Add(&e1)
 	repo.Add(&e3)
 
-	expenses, err := repo.ListByCategory(expense.BUSINESS)
+	expenses, err := repo.ListByCategory(expense.Business)
 	if err != nil {
 		t.Errorf("Error in finding by category: %v", err)
 	}
@@ -269,13 +269,13 @@ func TestJSONRepoListByCategory(t *testing.T) {
 
 func TestJSONRepoListByCategoryNotFound(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(100.50, "EFKA", expense.BUSINESS,
+	e1, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
 	repo.Add(&e1)
 
-	expenses, err := repo.ListByCategory(expense.ENTERTAINMENT)
+	expenses, err := repo.ListByCategory(expense.Entertainment)
 	if err == nil {
 		t.Errorf("Expected error, got nil")
 	}
@@ -286,7 +286,7 @@ func TestJSONRepoListByCategoryNotFound(t *testing.T) {
 
 func TestJSONRepoExport(t *testing.T) {
 	f := tempJSONFile(t)
-	e, _ := expense.NewExpense(100.50, "EFKA", expense.BUSINESS,
+	e, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -336,11 +336,11 @@ func TestJSONRepoExport(t *testing.T) {
 
 func TestListAll(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(100.50, "EFKA", expense.BUSINESS,
+	e1, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
 		expense.Date(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e2, _ := expense.NewExpense(60.50, "Coursera", expense.EDUCATION,
+	e2, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
-	e3, _ := expense.NewExpense(110.50, "BANK", expense.BUSINESS,
+	e3, _ := expense.NewExpense(110.50, "BANK", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)

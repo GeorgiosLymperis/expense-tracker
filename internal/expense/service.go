@@ -102,12 +102,34 @@ func (s service) TotalExpense(e []Expense) float32 {
 }
 
 func (s service) PrintExpenses(expenses []Expense) error {
-	for i, e := range expenses {
-		fmt.Printf("| ID: %d | %v | %v | %v | %.2f |\n", i+1, e.ExpenseDate(),
-			e.ExpenseCategory(), e.ExpenseDescription(), e.ExpenseAmount())
+	if len(expenses) == 0 {
+		fmt.Println("No expenses found.")
+		return nil
 	}
 
+	const sep = "+-----+------------+----------------------+----------------------+----------+"
 	fmt.Println()
-	fmt.Println("Total Amount: ", s.TotalExpense(expenses))
+	fmt.Println(sep)
+	fmt.Println("| ID  | Date       | Category             | Description          |   Amount |")
+	fmt.Println(sep)
+	for i, e := range expenses {
+		fmt.Printf("| %03d | %10s | %-20s | %-20s | €%7.2f |\n",
+			i+1, e.ExpenseDate(),
+			truncate(string(e.ExpenseCategory()), 20),
+			truncate(e.ExpenseDescription(), 20),
+			e.ExpenseAmount())
+	}
+	fmt.Println(sep)
+	fmt.Printf("| %64s €%7.2f |\n", "Total:", s.TotalExpense(expenses))
+	fmt.Println(sep)
+	fmt.Println()
 	return nil
+}
+
+func truncate(s string, max int) string {
+	runes := []rune(s)
+	if len(runes) <= max {
+		return s
+	}
+	return string(runes[:max-3]) + "..."
 }

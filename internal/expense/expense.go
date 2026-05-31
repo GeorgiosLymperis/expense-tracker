@@ -9,37 +9,39 @@ type Category string
 type Date time.Time
 
 const (
-	EDUCATION     Category = "Education"
-	ENTERTAINMENT Category = "Entertainment"
-	BUSINESS      Category = "Business"
-	FOOD          Category = "Food"
-	TRANSPORT     Category = "Transport"
-	HOUSING       Category = "Housing"
-	HEALTH        Category = "Health"
-	CLOTHING      Category = "Clothing"
-	UTILITIES     Category = "Utilities"
-	TRAVEL        Category = "Travel"
-	SUBSCRIPTIONS Category = "Subscriptions"
-	SAVINGS       Category = "Savings"
-	GIFTS         Category = "Gifts"
-	UNKNOWN       Category = "Unknown"
+	Education     Category = "Education"
+	Entertainment Category = "Entertainment"
+	Business      Category = "Business"
+	Food          Category = "Food"
+	Transport     Category = "Transport"
+	Housing       Category = "Housing"
+	Health        Category = "Health"
+	Clothing      Category = "Clothing"
+	Utilities     Category = "Utilities"
+	Travel        Category = "Travel"
+	Subscriptions Category = "Subscriptions"
+	Savings       Category = "Savings"
+	Gifts         Category = "Gifts"
+	Unknown       Category = "Unknown"
+	Social        Category = "Social"
 )
 
 var validCategories = map[Category]bool{
-	EDUCATION:     true,
-	ENTERTAINMENT: true,
-	BUSINESS:      true,
-	FOOD:          true,
-	TRANSPORT:     true,
-	HOUSING:       true,
-	HEALTH:        true,
-	CLOTHING:      true,
-	UTILITIES:     true,
-	TRAVEL:        true,
-	SUBSCRIPTIONS: true,
-	SAVINGS:       true,
-	GIFTS:         true,
-	UNKNOWN:       true,
+	Education:     true,
+	Entertainment: true,
+	Business:      true,
+	Food:          true,
+	Transport:     true,
+	Housing:       true,
+	Health:        true,
+	Clothing:      true,
+	Utilities:     true,
+	Travel:        true,
+	Subscriptions: true,
+	Savings:       true,
+	Gifts:         true,
+	Unknown:       true,
+	Social:        true,
 }
 
 func (c Category) IsValid() bool {
@@ -110,9 +112,9 @@ type Expense struct {
 }
 
 func NewExpense(amount float32, description string, category Category, date Date) (Expense, error) {
-	validAmount := validateAmount(amount)
-	if validAmount != nil {
-		return Expense{}, validAmount
+	err := validateAmount(amount)
+	if err != nil {
+		return Expense{}, err
 	}
 	return Expense{
 		amount:      amount,
@@ -120,7 +122,6 @@ func NewExpense(amount float32, description string, category Category, date Date
 		description: description,
 		category:    category}, nil
 }
-
 
 func (e Expense) ExpenseAmount() float32 {
 	return e.amount

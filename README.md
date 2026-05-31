@@ -105,6 +105,7 @@ Exports all expenses to `expenses.csv` in the current directory.
 | Health        |
 | Housing       |
 | Savings       |
+| Social        |
 | Subscriptions |
 | Transport     |
 | Travel        |

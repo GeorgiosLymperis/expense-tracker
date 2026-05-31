@@ -18,14 +18,14 @@ func newService() Service {
 
 func TestAddExpense(t *testing.T) {
 	s := newService()
-	if err := s.AddExpense(100.0, "Coursera", EDUCATION, day20200101); err != nil {
+	if err := s.AddExpense(100.0, "Coursera", Education, day20200101); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
 
 func TestAddExpenseNegativeAmount(t *testing.T) {
 	s := newService()
-	if err := s.AddExpense(-10, "Coursera", EDUCATION, day20200101); err == nil {
+	if err := s.AddExpense(-10, "Coursera", Education, day20200101); err == nil {
 		t.Error("expected error for negative amount, got nil")
 	}
 }
@@ -39,15 +39,15 @@ func TestAddExpenseInvalidCategory(t *testing.T) {
 
 func TestUpdateExpense(t *testing.T) {
 	s := newService()
-	s.AddExpense(100.0, "Coursera", EDUCATION, day20200101)
-	if err := s.UpdateExpense(1, 200.0, "Coursera Pro", EDUCATION, day20200101); err != nil {
+	s.AddExpense(100.0, "Coursera", Education, day20200101)
+	if err := s.UpdateExpense(1, 200.0, "Coursera Pro", Education, day20200101); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
 
 func TestDeleteExpense(t *testing.T) {
 	s := newService()
-	s.AddExpense(100.0, "Coursera", EDUCATION, day20200101)
+	s.AddExpense(100.0, "Coursera", Education, day20200101)
 	if err := s.DeleteExpense(1); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -55,9 +55,9 @@ func TestDeleteExpense(t *testing.T) {
 
 func TestListAll(t *testing.T) {
 	s := newService()
-	s.AddExpense(100.0, "Coursera", EDUCATION, day20200101)
-	s.AddExpense(12, "Datacamp", EDUCATION, day20200202)
-	s.AddExpense(12, "EFKA", BUSINESS, day20210202)
+	s.AddExpense(100.0, "Coursera", Education, day20200101)
+	s.AddExpense(12, "Datacamp", Education, day20200202)
+	s.AddExpense(12, "EFKA", Business, day20210202)
 
 	expenses, err := s.ListAll()
 	if err != nil {
@@ -70,11 +70,11 @@ func TestListAll(t *testing.T) {
 
 func TestListByCategory(t *testing.T) {
 	s := newService()
-	s.AddExpense(100.0, "Coursera", EDUCATION, day20200101)
-	s.AddExpense(12, "Datacamp", EDUCATION, day20200102)
-	s.AddExpense(12, "EFKA", BUSINESS, day20200101)
+	s.AddExpense(100.0, "Coursera", Education, day20200101)
+	s.AddExpense(12, "Datacamp", Education, day20200102)
+	s.AddExpense(12, "EFKA", Business, day20200101)
 
-	expenses, err := s.ListByCategory(EDUCATION)
+	expenses, err := s.ListByCategory(Education)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -85,9 +85,9 @@ func TestListByCategory(t *testing.T) {
 
 func TestListByMonth(t *testing.T) {
 	s := newService()
-	s.AddExpense(100.0, "Coursera", EDUCATION, day20200101)
-	s.AddExpense(12, "Datacamp", EDUCATION, day20200202)
-	s.AddExpense(12, "EFKA", BUSINESS, day20210202)
+	s.AddExpense(100.0, "Coursera", Education, day20200101)
+	s.AddExpense(12, "Datacamp", Education, day20200202)
+	s.AddExpense(12, "EFKA", Business, day20210202)
 
 	expenses, err := s.ListByMonth(2, 2020)
 	if err != nil {
@@ -100,9 +100,9 @@ func TestListByMonth(t *testing.T) {
 
 func TestListByYear(t *testing.T) {
 	s := newService()
-	s.AddExpense(100.0, "Coursera", EDUCATION, day20200101)
-	s.AddExpense(12, "Datacamp", EDUCATION, day20200202)
-	s.AddExpense(12, "EFKA", BUSINESS, day20210202)
+	s.AddExpense(100.0, "Coursera", Education, day20200101)
+	s.AddExpense(12, "Datacamp", Education, day20200202)
+	s.AddExpense(12, "EFKA", Business, day20210202)
 
 	expenses, err := s.ListByYear(2020)
 	if err != nil {
@@ -115,11 +115,11 @@ func TestListByYear(t *testing.T) {
 
 func TestTotalExpense(t *testing.T) {
 	s := newService()
-	s.AddExpense(100.0, "Coursera", EDUCATION, day20200101)
-	s.AddExpense(12, "Datacamp", EDUCATION, day20200202)
-	s.AddExpense(12, "EFKA", BUSINESS, day20210202)
+	s.AddExpense(100.0, "Coursera", Education, day20200101)
+	s.AddExpense(12, "Datacamp", Education, day20200202)
+	s.AddExpense(12, "EFKA", Business, day20210202)
 
-	education, _ := s.ListByCategory(EDUCATION)
+	education, _ := s.ListByCategory(Education)
 	if total := s.TotalExpense(education); total != 112 {
 		t.Errorf("expected total 112, got %v", total)
 	}

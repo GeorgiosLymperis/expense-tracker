@@ -43,7 +43,7 @@ func TestAddRouting(t *testing.T) {
 func TestAddCategory(t *testing.T) {
 	svc := &fakeService{}
 	Run(svc, []string{"add", "--description", "Coursera", "--amount", "50", "--category", "Education", "--date", "2026-05-28"})
-	if svc.addedCategory != expense.EDUCATION {
+	if svc.addedCategory != expense.Education {
 		t.Errorf("expected category Education, got %v", svc.addedCategory)
 	}
 }
@@ -96,7 +96,7 @@ func TestUpdateRequiresId(t *testing.T) {
 }
 
 func TestListCallsPrint(t *testing.T) {
-	lunch, _ := expense.NewExpense(20, "Lunch", expense.FOOD,
+	lunch, _ := expense.NewExpense(20, "Lunch", expense.Food,
 		expense.Date(time.Date(2026, 5, 28, 0, 0, 0, 0, time.UTC)))
 	svc := &fakeService{listResult: []expense.Expense{lunch}}
 
@@ -126,7 +126,7 @@ func TestListByCategoryPassesCorrectCategory(t *testing.T) {
 	if err := Run(svc, []string{"list-category", "--category", "Food"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if svc.listByCat != expense.FOOD {
+	if svc.listByCat != expense.Food {
 		t.Errorf("expected category Food, got %v", svc.listByCat)
 	}
 }
