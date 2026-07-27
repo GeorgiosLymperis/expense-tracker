@@ -24,6 +24,8 @@ const (
 	Gifts         Category = "Gifts"
 	Unknown       Category = "Unknown"
 	Social        Category = "Social"
+	Fitness       Category = "Fitness"
+	Supplements   Category = "Supplements"
 )
 
 var validCategories = map[Category]bool{
@@ -42,6 +44,8 @@ var validCategories = map[Category]bool{
 	Gifts:         true,
 	Unknown:       true,
 	Social:        true,
+	Fitness:       true,
+	Supplements:   true,
 }
 
 func (c Category) IsValid() bool {
