@@ -9,11 +9,12 @@ import (
 
 type Service interface {
 	// commands
-	AddExpense(amount float32, description string, category Category, date Date) error
-	UpdateExpense(id int, amount float32, description string, category Category, date Date) error
+	AddExpense(amount Amount, description string, category Category, date Date) error
+	UpdateExpense(id int, amount Amount, description string, category Category, date Date) error
 	DeleteExpense(id int) error
 
 	// queries
+	GetExpense(id int) (Expense, error)
 	ListAll() ([]Expense, error)
 	ListByCategory(category Category) ([]Expense, error)
 	ListByMonth(month time.Month, year int) ([]Expense, error)
@@ -23,7 +24,7 @@ type Service interface {
 	ExportCSV(file *os.File) error
 
 	// helpers
-	TotalExpense(expense []Expense) float32
+	TotalExpense(expense []Expense) Amount
 	PrintExpenses(expenses []Expense) error
 }
 
@@ -47,7 +48,7 @@ func validateCategory(category Category) error {
 	return nil
 }
 
-func (s service) AddExpense(amount float32, description string, category Category, date Date) error {
+func (s service) AddExpense(amount Amount, description string, category Category, date Date) error {
 	if err := validateCategory(category); err != nil {
 		return err
 	}
@@ -58,7 +59,7 @@ func (s service) AddExpense(amount float32, description string, category Categor
 	return s.repo.Add(&e)
 }
 
-func (s service) UpdateExpense(id int, amount float32, description string, category Category, date Date) error {
+func (s service) UpdateExpense(id int, amount Amount, description string, category Category, date Date) error {
 	if err := validateCategory(category); err != nil {
 		return err
 	}
@@ -71,6 +72,10 @@ func (s service) UpdateExpense(id int, amount float32, description string, categ
 
 func (s service) DeleteExpense(id int) error {
 	return s.repo.Delete(id)
+}
+
+func (s service) GetExpense(id int) (Expense, error) {
+	return s.repo.Get(id)
 }
 
 func (s service) ListAll() ([]Expense, error) {
@@ -93,8 +98,8 @@ func (s service) ExportCSV(file *os.File) error {
 	return s.repo.ExportCSV(file)
 }
 
-func (s service) TotalExpense(e []Expense) float32 {
-	var sum float32 = 0
+func (s service) TotalExpense(e []Expense) Amount {
+	var sum Amount
 	for _, expense := range e {
 		sum += expense.ExpenseAmount()
 	}
@@ -113,14 +118,14 @@ func (s service) PrintExpenses(expenses []Expense) error {
 	fmt.Println("| ID  | Date       | Category             | Description          |   Amount |")
 	fmt.Println(sep)
 	for _, e := range expenses {
-		fmt.Printf("| %03d | %10s | %-20s | %-20s | €%7.2f |\n",
+		fmt.Printf("| %03d | %10s | %-20s | %-20s | €%7s |\n",
 			e.ID(), e.ExpenseDate(),
 			truncate(string(e.ExpenseCategory()), 20),
 			truncate(e.ExpenseDescription(), 20),
 			e.ExpenseAmount())
 	}
 	fmt.Println(sep)
-	fmt.Printf("| %64s €%7.2f |\n", "Total:", s.TotalExpense(expenses))
+	fmt.Printf("| %64s €%7s |\n", "Total:", s.TotalExpense(expenses))
 	fmt.Println(sep)
 	fmt.Println()
 	return nil

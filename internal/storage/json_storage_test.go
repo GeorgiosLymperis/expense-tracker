@@ -3,9 +3,10 @@ package storage
 import (
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"expense-tracker/internal/expense"
-	"io"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -61,7 +62,7 @@ func TestNewJSONRepo(t *testing.T) {
 
 func TestJSONRepoAdd(t *testing.T) {
 	f := tempJSONFile(t)
-	e, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
+	e, _ := expense.NewExpense(expense.Amount(100.50*100), "EFKA", expense.Business,
 		expense.Date(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -69,7 +70,7 @@ func TestJSONRepoAdd(t *testing.T) {
 		t.Fatalf("Could not Add expense %v", e)
 	}
 
-	byteValue, _ := io.ReadAll(f)
+	byteValue, _ := os.ReadFile(f.Name())
 	var expenses []expenseRecord
 	json.Unmarshal(byteValue, &expenses)
 
@@ -78,16 +79,16 @@ func TestJSONRepoAdd(t *testing.T) {
 
 func TestJSONRepoAddOlderYearIsLast(t *testing.T) {
 	f := tempJSONFile(t)
-	old, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
+	old, _ := expense.NewExpense(expense.Amount(100.50*100), "EFKA", expense.Business,
 		expense.Date(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)))
-	newer, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
+	newer, _ := expense.NewExpense(expense.Amount(60.50*100), "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 3, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
 	repo.Add(&newer)
 	repo.Add(&old)
 
-	byteValue, _ := io.ReadAll(f)
+	byteValue, _ := os.ReadFile(f.Name())
 	var expenses []expenseRecord
 	json.Unmarshal(byteValue, &expenses)
 
@@ -96,16 +97,16 @@ func TestJSONRepoAddOlderYearIsLast(t *testing.T) {
 
 func TestJSONRepoAddOlderMonthIsLast(t *testing.T) {
 	f := tempJSONFile(t)
-	old, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
+	old, _ := expense.NewExpense(expense.Amount(100.50*100), "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
-	newer, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
+	newer, _ := expense.NewExpense(expense.Amount(60.50*100), "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 3, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
 	repo.Add(&newer)
 	repo.Add(&old)
 
-	byteValue, _ := io.ReadAll(f)
+	byteValue, _ := os.ReadFile(f.Name())
 	var expenses []expenseRecord
 	json.Unmarshal(byteValue, &expenses)
 
@@ -114,16 +115,16 @@ func TestJSONRepoAddOlderMonthIsLast(t *testing.T) {
 
 func TestJSONRepoAddOlderDayIsLast(t *testing.T) {
 	f := tempJSONFile(t)
-	old, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
+	old, _ := expense.NewExpense(expense.Amount(100.50*100), "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
-	newer, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
+	newer, _ := expense.NewExpense(expense.Amount(60.50*100), "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 3, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
 	repo.Add(&newer)
 	repo.Add(&old)
 
-	byteValue, _ := io.ReadAll(f)
+	byteValue, _ := os.ReadFile(f.Name())
 	var expenses []expenseRecord
 	json.Unmarshal(byteValue, &expenses)
 
@@ -132,9 +133,9 @@ func TestJSONRepoAddOlderDayIsLast(t *testing.T) {
 
 func TestJSONRepoDelete(t *testing.T) {
 	f := tempJSONFile(t)
-	old, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
+	old, _ := expense.NewExpense(expense.Amount(100.50*100), "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
-	newer, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
+	newer, _ := expense.NewExpense(expense.Amount(60.50*100), "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 3, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -145,7 +146,7 @@ func TestJSONRepoDelete(t *testing.T) {
 		t.Fatalf("Could not delete expense: %v", err)
 	}
 
-	byteValue, _ := io.ReadAll(f)
+	byteValue, _ := os.ReadFile(f.Name())
 	var expenses []expenseRecord
 	json.Unmarshal(byteValue, &expenses)
 
@@ -154,9 +155,9 @@ func TestJSONRepoDelete(t *testing.T) {
 
 func TestJSONRepoUpdate(t *testing.T) {
 	f := tempJSONFile(t)
-	e, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
+	e, _ := expense.NewExpense(expense.Amount(100.50*100), "EFKA", expense.Business,
 		expense.Date(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)))
-	updated, _ := expense.NewExpense(25.00, "NETFLIX", expense.Entertainment,
+	updated, _ := expense.NewExpense(expense.Amount(25.00*100), "NETFLIX", expense.Entertainment,
 		expense.Date(time.Date(2020, 2, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -165,7 +166,7 @@ func TestJSONRepoUpdate(t *testing.T) {
 		t.Errorf("Error in updating")
 	}
 
-	byteValue, _ := io.ReadAll(f)
+	byteValue, _ := os.ReadFile(f.Name())
 	var expenses []expenseRecord
 	json.Unmarshal(byteValue, &expenses)
 
@@ -174,11 +175,11 @@ func TestJSONRepoUpdate(t *testing.T) {
 
 func TestJSONRepoListByDate(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
+	e1, _ := expense.NewExpense(expense.Amount(100.50*100), "EFKA", expense.Business,
 		expense.Date(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e2, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
+	e2, _ := expense.NewExpense(expense.Amount(60.50*100), "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
-	e3, _ := expense.NewExpense(110.50, "BANK", expense.Business,
+	e3, _ := expense.NewExpense(expense.Amount(110.50*100), "BANK", expense.Business,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -201,11 +202,11 @@ func TestJSONRepoListByDate(t *testing.T) {
 
 func TestJSONRepoListByMonth(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
+	e1, _ := expense.NewExpense(expense.Amount(100.50*100), "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e2, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
+	e2, _ := expense.NewExpense(expense.Amount(60.50*100), "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
-	e3, _ := expense.NewExpense(110.50, "BANK", expense.Business,
+	e3, _ := expense.NewExpense(expense.Amount(110.50*100), "BANK", expense.Business,
 		expense.Date(time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -223,11 +224,11 @@ func TestJSONRepoListByMonth(t *testing.T) {
 
 func TestJSONRepoListByYear(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
+	e1, _ := expense.NewExpense(expense.Amount(100.50*100), "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e2, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
+	e2, _ := expense.NewExpense(expense.Amount(60.50*100), "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
-	e3, _ := expense.NewExpense(110.50, "BANK", expense.Business,
+	e3, _ := expense.NewExpense(expense.Amount(110.50*100), "BANK", expense.Business,
 		expense.Date(time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -246,11 +247,11 @@ func TestJSONRepoListByYear(t *testing.T) {
 
 func TestJSONRepoListByCategory(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
+	e1, _ := expense.NewExpense(expense.Amount(100.50*100), "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e2, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
+	e2, _ := expense.NewExpense(expense.Amount(60.50*100), "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e3, _ := expense.NewExpense(110.50, "BANK", expense.Business,
+	e3, _ := expense.NewExpense(expense.Amount(110.50*100), "BANK", expense.Business,
 		expense.Date(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -269,7 +270,7 @@ func TestJSONRepoListByCategory(t *testing.T) {
 
 func TestJSONRepoListByCategoryNotFound(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
+	e1, _ := expense.NewExpense(expense.Amount(100.50*100), "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -286,7 +287,7 @@ func TestJSONRepoListByCategoryNotFound(t *testing.T) {
 
 func TestJSONRepoExport(t *testing.T) {
 	f := tempJSONFile(t)
-	e, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
+	e, _ := expense.NewExpense(expense.Amount(100.50*100), "EFKA", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -329,18 +330,18 @@ func TestJSONRepoExport(t *testing.T) {
 	if row[2] != "EFKA" {
 		t.Errorf("Expected description EFKA, got %v", row[2])
 	}
-	if row[3] != "100.5" {
-		t.Errorf("Expected amount 100.5, got %v", row[3])
+	if row[3] != "100.50" {
+		t.Errorf("Expected amount 100.50, got %v", row[3])
 	}
 }
 
 func TestListAll(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(100.50, "EFKA", expense.Business,
+	e1, _ := expense.NewExpense(expense.Amount(100.50*100), "EFKA", expense.Business,
 		expense.Date(time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e2, _ := expense.NewExpense(60.50, "Coursera", expense.Education,
+	e2, _ := expense.NewExpense(expense.Amount(60.50*100), "Coursera", expense.Education,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
-	e3, _ := expense.NewExpense(110.50, "BANK", expense.Business,
+	e3, _ := expense.NewExpense(expense.Amount(110.50*100), "BANK", expense.Business,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -373,11 +374,11 @@ func readRecords(t *testing.T, f *os.File) []expenseRecord {
 
 func TestJSONRepoIDsSurviveSortingAndDeletes(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(10, "A", expense.Food,
+	e1, _ := expense.NewExpense(expense.Amount(10*100), "A", expense.Food,
 		expense.Date(time.Date(2023, 3, 1, 0, 0, 0, 0, time.UTC)))
-	e2, _ := expense.NewExpense(20, "B", expense.Food,
+	e2, _ := expense.NewExpense(expense.Amount(20*100), "B", expense.Food,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e3, _ := expense.NewExpense(30, "C", expense.Food,
+	e3, _ := expense.NewExpense(expense.Amount(30*100), "C", expense.Food,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -400,11 +401,11 @@ func TestJSONRepoIDsSurviveSortingAndDeletes(t *testing.T) {
 
 func TestJSONRepoUpdateKeepsID(t *testing.T) {
 	f := tempJSONFile(t)
-	e1, _ := expense.NewExpense(10, "A", expense.Food,
+	e1, _ := expense.NewExpense(expense.Amount(10*100), "A", expense.Food,
 		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
-	e2, _ := expense.NewExpense(20, "B", expense.Food,
+	e2, _ := expense.NewExpense(expense.Amount(20*100), "B", expense.Food,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
-	updated, _ := expense.NewExpense(25, "B2", expense.Food,
+	updated, _ := expense.NewExpense(expense.Amount(25*100), "B2", expense.Food,
 		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
@@ -427,15 +428,15 @@ func TestJSONRepoUpdateKeepsID(t *testing.T) {
 
 func TestJSONRepoUnknownID(t *testing.T) {
 	f := tempJSONFile(t)
-	e, _ := expense.NewExpense(10, "A", expense.Food, expense.Date(time.Now()))
+	e, _ := expense.NewExpense(expense.Amount(10*100), "A", expense.Food, expense.Date(time.Now()))
 
 	repo := NewJSONRepo(f)
 	repo.Add(&e)
-	if err := repo.Delete(5); err == nil {
-		t.Error("Expected error deleting unknown ID, got nil")
+	if err := repo.Delete(5); !errors.Is(err, expense.ErrNotFound) {
+		t.Errorf("Expected ErrNotFound deleting unknown ID, got %v", err)
 	}
-	if err := repo.Update(5, &e); err == nil {
-		t.Error("Expected error updating unknown ID, got nil")
+	if err := repo.Update(5, &e); !errors.Is(err, expense.ErrNotFound) {
+		t.Errorf("Expected ErrNotFound updating unknown ID, got %v", err)
 	}
 }
 
@@ -459,5 +460,27 @@ func TestJSONRepoMigratesFileWithoutIDs(t *testing.T) {
 	recs := readRecords(t, f)
 	if recs[0].ID != 1 || recs[1].ID != 2 {
 		t.Errorf("Migrated IDs should be saved to the file. Got %v, %v", recs[0].ID, recs[1].ID)
+	}
+}
+
+func TestJSONRepoSaveLeavesNoTempFiles(t *testing.T) {
+	dir := t.TempDir()
+	f, err := os.Create(filepath.Join(dir, "expenses.json"))
+	if err != nil {
+		t.Fatalf("Could not create file: %v", err)
+	}
+	defer f.Close()
+	e, _ := expense.NewExpense(expense.Amount(10*100), "A", expense.Food, expense.Date(time.Now()))
+
+	repo := NewJSONRepo(f)
+	repo.Add(&e)
+	repo.Delete(1)
+
+	entries, _ := os.ReadDir(dir)
+	if len(entries) != 1 {
+		t.Errorf("Expected only expenses.json in %s, got %d files", dir, len(entries))
+	}
+	if recs := readRecords(t, f); len(recs) != 0 {
+		t.Errorf("Expected no records after delete, got %d", len(recs))
 	}
 }

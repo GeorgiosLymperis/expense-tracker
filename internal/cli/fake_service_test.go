@@ -8,14 +8,16 @@ import (
 
 type fakeService struct {
 	// recorded call arguments
-	addedAmount      float32
+	addedAmount      expense.Amount
 	addedDescription string
 	addedCategory    expense.Category
 	addedDate        expense.Date
 
 	updatedID          int
-	updatedAmount      float32
+	updatedAmount      expense.Amount
 	updatedDescription string
+	updatedCategory    expense.Category
+	updatedDate        expense.Date
 
 	deletedID int
 
@@ -27,12 +29,14 @@ type fakeService struct {
 	printedExpenses []expense.Expense
 
 	// configurable returns
+	getResult  expense.Expense
+	getErr     error
 	listResult []expense.Expense
 	listErr    error
 	cmdErr     error
 }
 
-func (f *fakeService) AddExpense(amount float32, desc string, cat expense.Category, date expense.Date) error {
+func (f *fakeService) AddExpense(amount expense.Amount, desc string, cat expense.Category, date expense.Date) error {
 	f.addedAmount = amount
 	f.addedDescription = desc
 	f.addedCategory = cat
@@ -40,16 +44,22 @@ func (f *fakeService) AddExpense(amount float32, desc string, cat expense.Catego
 	return f.cmdErr
 }
 
-func (f *fakeService) UpdateExpense(id int, amount float32, desc string, cat expense.Category, date expense.Date) error {
+func (f *fakeService) UpdateExpense(id int, amount expense.Amount, desc string, cat expense.Category, date expense.Date) error {
 	f.updatedID = id
 	f.updatedAmount = amount
 	f.updatedDescription = desc
+	f.updatedCategory = cat
+	f.updatedDate = date
 	return f.cmdErr
 }
 
 func (f *fakeService) DeleteExpense(id int) error {
 	f.deletedID = id
 	return f.cmdErr
+}
+
+func (f *fakeService) GetExpense(id int) (expense.Expense, error) {
+	return f.getResult, f.getErr
 }
 
 func (f *fakeService) ListAll() ([]expense.Expense, error) {
@@ -76,8 +86,8 @@ func (f *fakeService) ExportCSV(file *os.File) error {
 	return f.cmdErr
 }
 
-func (f *fakeService) TotalExpense(expenses []expense.Expense) float32 {
-	var sum float32
+func (f *fakeService) TotalExpense(expenses []expense.Expense) expense.Amount {
+	var sum expense.Amount
 	for _, e := range expenses {
 		sum += e.ExpenseAmount()
 	}

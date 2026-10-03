@@ -7,8 +7,8 @@ import (
 	"expense-tracker/internal/expense"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
-	"strconv"
 	"time"
 )
 
@@ -22,7 +22,7 @@ func NewJSONRepo(f *os.File) *JSONRepo {
 
 type expenseRecord struct {
 	ID          int              `json:"id"`
-	Amount      float32          `json:"amount"`
+	Amount      expense.Amount   `json:"amount"`
 	Date        expense.Date     `json:"date"`
 	Description string           `json:"description"`
 	Category    expense.Category `json:"category"`
@@ -77,13 +77,10 @@ func assignMissingIDs(expenses []expenseRecord) bool {
 }
 
 func (r *JSONRepo) Add(e *expense.Expense) error {
-	var expenses []expenseRecord
-
-	file, err := openJsonRepoFile(r.file.Name(), &expenses)
+	expenses, err := r.load()
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
 	newRecord := newExpenseRecord(e)
 	newRecord.ID = nextID(expenses)
@@ -93,97 +90,117 @@ func (r *JSONRepo) Add(e *expense.Expense) error {
 		return cmp.Compare(a.Date.String(), b.Date.String())
 	})
 
-	return updateJsonRepoFileOk(file, &expenses)
+	return r.save(expenses)
 }
 
 func (r *JSONRepo) Delete(id int) error {
-	var expenses []expenseRecord
-
-	file, err := openJsonRepoFile(r.file.Name(), &expenses)
+	expenses, err := r.load()
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
 	i := indexOfID(expenses, id)
 	if i == -1 {
-		return fmt.Errorf("Invalid ID: no expense with ID %d", id)
+		return fmt.Errorf("%w: ID %d", expense.ErrNotFound, id)
 	}
 	expenses = slices.Delete(expenses, i, i+1)
 
-	return updateJsonRepoFileOk(file, &expenses)
+	return r.save(expenses)
 }
 
-func openJsonRepoFile(name string, r *[]expenseRecord) (*os.File, error) {
-	file, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		return nil, fmt.Errorf("Error opening file:%v", err)
-	}
-
-	byteValue, err := os.ReadFile(file.Name())
+// load reads all records from the JSON file, giving IDs to any records
+// saved before IDs existed.
+func (r *JSONRepo) load() ([]expenseRecord, error) {
+	byteValue, err := os.ReadFile(r.file.Name())
 	if err != nil {
 		return nil, fmt.Errorf("Error reading file:%v", err)
 	}
 
+	var expenses []expenseRecord
 	if len(byteValue) != 0 {
-		if err := json.Unmarshal(byteValue, &r); err != nil {
+		if err := json.Unmarshal(byteValue, &expenses); err != nil {
 			return nil, fmt.Errorf("Error unmarshalling:%v", err)
 		}
 	}
 
-	if assignMissingIDs(*r) {
-		if err := updateJsonRepoFileOk(file, r); err != nil {
-			file.Close()
+	if assignMissingIDs(expenses) {
+		if err := r.save(expenses); err != nil {
 			return nil, err
 		}
 	}
-	return file, nil
+	return expenses, nil
 }
 
-func updateJsonRepoFileOk(file *os.File, r *[]expenseRecord) error {
-	if err := file.Truncate(0); err != nil {
-		return fmt.Errorf("Error truncating file:%v", err)
+// save replaces the JSON file atomically: it writes a temporary file next to
+// it and renames it into place, so a crash mid-write leaves the old file
+// intact instead of an empty or half-written one.
+func (r *JSONRepo) save(expenses []expenseRecord) error {
+	if expenses == nil {
+		expenses = []expenseRecord{}
 	}
+	name := r.file.Name()
 
-	if _, err := file.Seek(0, 0); err != nil {
-		return fmt.Errorf("Error seeking file:%v", err)
+	tmp, err := os.CreateTemp(filepath.Dir(name), filepath.Base(name)+".tmp-*")
+	if err != nil {
+		return fmt.Errorf("Error creating temp file:%v", err)
 	}
+	defer os.Remove(tmp.Name()) // no-op once the rename has succeeded
 
-	encoder := json.NewEncoder(file)
-	if err := encoder.Encode(r); err != nil {
+	if err := json.NewEncoder(tmp).Encode(expenses); err != nil {
+		tmp.Close()
 		return fmt.Errorf("Problem in encoding: %v", err)
 	}
-
+	if err := tmp.Chmod(0644); err != nil {
+		tmp.Close()
+		return fmt.Errorf("Error setting file permissions:%v", err)
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return fmt.Errorf("Error syncing file:%v", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("Error closing file:%v", err)
+	}
+	if err := os.Rename(tmp.Name(), name); err != nil {
+		return fmt.Errorf("Error replacing file:%v", err)
+	}
 	return nil
 }
 
-func (r *JSONRepo) Update(id int, e *expense.Expense) error {
-	var expenses []expenseRecord
-
-	file, err := openJsonRepoFile(r.file.Name(), &expenses)
+func (r *JSONRepo) Get(id int) (expense.Expense, error) {
+	expenses, err := r.load()
 	if err != nil {
-		return err
+		return expense.Expense{}, err
 	}
-	defer file.Close()
 
 	i := indexOfID(expenses, id)
 	if i == -1 {
-		return fmt.Errorf("Invalid ID: no expense with ID %d", id)
+		return expense.Expense{}, fmt.Errorf("%w: ID %d", expense.ErrNotFound, id)
+	}
+	return expenses[i].toExpense()
+}
+
+func (r *JSONRepo) Update(id int, e *expense.Expense) error {
+	expenses, err := r.load()
+	if err != nil {
+		return err
+	}
+
+	i := indexOfID(expenses, id)
+	if i == -1 {
+		return fmt.Errorf("%w: ID %d", expense.ErrNotFound, id)
 	}
 
 	expenses[i] = newExpenseRecord(e)
 	expenses[i].ID = id
-	return updateJsonRepoFileOk(file, &expenses)
+	return r.save(expenses)
 }
 
 func (r *JSONRepo) ListByCategory(c expense.Category) ([]expense.Expense, error) {
-	var expenses []expenseRecord
-
-	file, err := openJsonRepoFile(r.file.Name(), &expenses)
+	expenses, err := r.load()
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 
 	var expensesInCategory []expense.Expense
 	for _, e := range expenses {
@@ -203,13 +220,10 @@ func (r *JSONRepo) ListByCategory(c expense.Category) ([]expense.Expense, error)
 }
 
 func (r *JSONRepo) ListByMonth(m time.Month, y int) ([]expense.Expense, error) {
-	var expenses []expenseRecord
-
-	file, err := openJsonRepoFile(r.file.Name(), &expenses)
+	expenses, err := r.load()
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 
 	var expensesInMonth []expense.Expense
 	for _, e := range expenses {
@@ -229,13 +243,10 @@ func (r *JSONRepo) ListByMonth(m time.Month, y int) ([]expense.Expense, error) {
 }
 
 func (r *JSONRepo) ListByYear(y int) ([]expense.Expense, error) {
-	var expenses []expenseRecord
-
-	file, err := openJsonRepoFile(r.file.Name(), &expenses)
+	expenses, err := r.load()
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 
 	var expensesInYear []expense.Expense
 	for _, e := range expenses {
@@ -255,13 +266,10 @@ func (r *JSONRepo) ListByYear(y int) ([]expense.Expense, error) {
 }
 
 func (r *JSONRepo) ListByDate(d expense.Date) ([]expense.Expense, error) {
-	var expenses []expenseRecord
-
-	file, err := openJsonRepoFile(r.file.Name(), &expenses)
+	expenses, err := r.load()
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 
 	var expensesInDate []expense.Expense
 	for _, e := range expenses {
@@ -281,13 +289,10 @@ func (r *JSONRepo) ListByDate(d expense.Date) ([]expense.Expense, error) {
 }
 
 func (r *JSONRepo) ExportCSV(f *os.File) error {
-	var expenses []expenseRecord
-
-	file, err := openJsonRepoFile(r.file.Name(), &expenses)
+	expenses, err := r.load()
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
 	w := csv.NewWriter(f)
 	if err := w.Write([]string{"Date", "Category", "Description", "Amount"}); err != nil {
@@ -296,7 +301,7 @@ func (r *JSONRepo) ExportCSV(f *os.File) error {
 
 	for _, e := range expenses {
 		if err := w.Write([]string{e.Date.String(), string(e.Category),
-			e.Description, strconv.FormatFloat(float64(e.Amount), 'f', -1, 32)}); err != nil {
+			e.Description, e.Amount.String()}); err != nil {
 			return err
 		}
 	}
@@ -305,13 +310,10 @@ func (r *JSONRepo) ExportCSV(f *os.File) error {
 }
 
 func (r *JSONRepo) ListAll() ([]expense.Expense, error) {
-	var expenses []expenseRecord
-
-	file, err := openJsonRepoFile(r.file.Name(), &expenses)
+	expenses, err := r.load()
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 
 	var allExpenses []expense.Expense
 	for _, e := range expenses {

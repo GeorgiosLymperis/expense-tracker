@@ -24,7 +24,7 @@ go build -o tracker ./cmd/expense-tracker
 
 Flags:
 - `--description` — expense description
-- `--amount` — expense amount
+- `--amount` — expense amount, with at most 2 decimals (e.g. `12.50`)
 - `--category` — expense category (default: Unknown)
 - `--date` — date in `YYYY-MM-DD` format (default: today)
 
@@ -33,6 +33,8 @@ Flags:
 ```bash
 ./tracker update --id 1 --description "Brunch" --amount 15 --category Food --date 2026-05-28
 ```
+
+Only the flags you pass are changed. For example, `./tracker update --id 1 --amount 15` changes the amount and keeps the description, category and date.
 
 ### Delete an expense
 
@@ -140,7 +142,7 @@ Adds an expense.
 
 | Field         | Type   | Required | Default   | Notes                                  |
 |---------------|--------|----------|-----------|----------------------------------------|
-| `amount`      | number | yes      |           | Must be 0 or more                      |
+| `amount`      | number | yes      |           | 0 or more, at most 2 decimals          |
 | `description` | string | no       | `Unknown` |                                        |
 | `category`    | string | no       | `Unknown` | One of the [categories](#categories)   |
 | `date`        | string | no       | today     | `YYYY-MM-DD`                           |
@@ -153,7 +155,7 @@ curl -X POST http://localhost:8080/expenses \
 
 **Responses**
 - `201 Created`: no body
-- `400 Bad Request`: invalid JSON, negative amount, unknown category, or date not in `YYYY-MM-DD` format
+- `400 Bad Request`: invalid JSON, amount negative or with more than 2 decimals, unknown category, or date not in `YYYY-MM-DD` format
 - `500 Internal Server Error`: the expense could not be saved
 
 ### PUT /expenses/{id}

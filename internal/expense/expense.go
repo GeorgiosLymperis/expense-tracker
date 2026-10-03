@@ -95,14 +95,14 @@ func ParseDate(str string) (Date, error) {
 }
 
 type NegativeAmountError struct {
-	amount float32
+	amount Amount
 }
 
 func (e *NegativeAmountError) Error() string {
-	return fmt.Sprintf("Negative amount: %f", e.amount)
+	return fmt.Sprintf("Negative amount: %s", e.amount)
 }
 
-func validateAmount(amount float32) error {
+func validateAmount(amount Amount) error {
 	if amount < 0 {
 		return &NegativeAmountError{amount: amount}
 	}
@@ -111,7 +111,7 @@ func validateAmount(amount float32) error {
 
 type Expense struct {
 	id          int
-	amount      float32
+	amount      Amount
 	date        Date
 	description string
 	category    Category
@@ -120,7 +120,7 @@ type Expense struct {
 func (e Expense) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		ID          int      `json:"id"`
-		Amount      float32  `json:"amount"`
+		Amount      Amount   `json:"amount"`
 		Date        Date     `json:"date"`
 		Description string   `json:"description"`
 		Category    Category `json:"category"`
@@ -133,7 +133,7 @@ func (e Expense) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func NewExpense(amount float32, description string, category Category, date Date) (Expense, error) {
+func NewExpense(amount Amount, description string, category Category, date Date) (Expense, error) {
 	err := validateAmount(amount)
 	if err != nil {
 		return Expense{}, err
@@ -155,7 +155,7 @@ func (e Expense) ID() int {
 	return e.id
 }
 
-func (e Expense) ExpenseAmount() float32 {
+func (e Expense) ExpenseAmount() Amount {
 	return e.amount
 }
 

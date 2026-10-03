@@ -2,12 +2,12 @@ package httpapi
 
 import (
 	"encoding/json"
+	"errors"
 	"expense-tracker/internal/expense"
 	"log"
 	"net"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -18,7 +18,7 @@ type api struct {
 }
 
 type addExpenseRequest struct {
-	Amount      float32          `json:"amount"`
+	Amount      expense.Amount   `json:"amount"`
 	Description string           `json:"description"`
 	Category    expense.Category `json:"category"`
 	Date        string           `json:"date"`
@@ -111,7 +111,7 @@ func (a *api) handleAdd(w http.ResponseWriter, r *http.Request) {
 	defer a.mu.Unlock()
 	var req addExpenseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid json body", http.StatusBadRequest)
+		http.Error(w, "invalid json body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -145,7 +145,7 @@ func (a *api) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	var req addExpenseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid json body", http.StatusBadRequest)
+		http.Error(w, "invalid json body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -165,8 +165,7 @@ func (a *api) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		req.Description,
 		req.Category,
 		expenseDate); err != nil {
-		// TODO: handle error without string prefix
-		if strings.HasPrefix(err.Error(), "Invalid ID") {
+		if errors.Is(err, expense.ErrNotFound) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
@@ -187,8 +186,7 @@ func (a *api) handleDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.svc.DeleteExpense(id); err != nil {
-		// TODO: handle error without string prefix
-		if strings.HasPrefix(err.Error(), "Invalid ID") {
+		if errors.Is(err, expense.ErrNotFound) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}

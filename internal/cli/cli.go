@@ -22,7 +22,7 @@ func Run(svc expense.Service, args []string) error {
 
 	fs := flag.NewFlagSet("expense-tracker", flag.ContinueOnError)
 	desc := fs.String("description", "", "Expense description")
-	amount := fs.Float64("amount", 0, "Expense amount")
+	amount := fs.String("amount", "0", "Expense amount, e.g. 12.50")
 	cat := fs.String("category", string(expense.Unknown), "Expense category")
 	date := fs.String("date", expense.Date(time.Now()).String(), "Date of expense (YYYY-MM-DD)")
 	id := fs.Int("id", 0, "Expense ID")
@@ -36,6 +36,9 @@ func Run(svc expense.Service, args []string) error {
 	parseDate := func() (expense.Date, error) {
 		return expense.ParseDate(*date)
 	}
+	parseAmount := func() (expense.Amount, error) {
+		return expense.ParseAmount(*amount)
+	}
 
 	switch args[0] {
 	case "add":
@@ -43,7 +46,11 @@ func Run(svc expense.Service, args []string) error {
 		if err != nil {
 			return err
 		}
-		if err := svc.AddExpense(float32(*amount), *desc, expense.Category(*cat), expenseDate); err != nil {
+		expenseAmount, err := parseAmount()
+		if err != nil {
+			return err
+		}
+		if err := svc.AddExpense(expenseAmount, *desc, expense.Category(*cat), expenseDate); err != nil {
 			return err
 		}
 		fmt.Println("Expense added successfully.")
@@ -61,11 +68,33 @@ func Run(svc expense.Service, args []string) error {
 		if *id == 0 {
 			return fmt.Errorf("--id is required for update")
 		}
-		expenseDate, err := parseDate()
+		// Start from the stored expense and change only the flags given.
+		current, err := svc.GetExpense(*id)
 		if err != nil {
 			return err
 		}
-		if err := svc.UpdateExpense(*id, float32(*amount), *desc, expense.Category(*cat), expenseDate); err != nil {
+		set := setFlags(fs)
+		newAmount := current.ExpenseAmount()
+		if set["amount"] {
+			if newAmount, err = parseAmount(); err != nil {
+				return err
+			}
+		}
+		newDesc := current.ExpenseDescription()
+		if set["description"] {
+			newDesc = *desc
+		}
+		newCat := current.ExpenseCategory()
+		if set["category"] {
+			newCat = expense.Category(*cat)
+		}
+		newDate := current.ExpenseDate()
+		if set["date"] {
+			if newDate, err = parseDate(); err != nil {
+				return err
+			}
+		}
+		if err := svc.UpdateExpense(*id, newAmount, newDesc, newCat, newDate); err != nil {
 			return err
 		}
 		fmt.Println("Expense updated successfully.")
@@ -77,12 +106,7 @@ func Run(svc expense.Service, args []string) error {
 		}
 		return svc.PrintExpenses(expenses)
 	case "summary":
-		monthSet := false
-		fs.Visit(func(f *flag.Flag) {
-			if f.Name == "month" {
-				monthSet = true
-			}
-		})
+		monthSet := setFlags(fs)["month"]
 		var expenses []expense.Expense
 		var err error
 		if monthSet {
@@ -90,13 +114,13 @@ func Run(svc expense.Service, args []string) error {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Total expenses for %s: €%.2f\n", time.Month(*month), svc.TotalExpense(expenses))
+			fmt.Printf("Total expenses for %s: €%s\n", time.Month(*month), svc.TotalExpense(expenses))
 		} else {
 			expenses, err = svc.ListAll()
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Total expenses: €%.2f\n", svc.TotalExpense(expenses))
+			fmt.Printf("Total expenses: €%s\n", svc.TotalExpense(expenses))
 		}
 		return nil
 	case "list-category":
@@ -122,6 +146,15 @@ func Run(svc expense.Service, args []string) error {
 	}
 }
 
+// setFlags returns the names of the flags given on the command line.
+func setFlags(fs *flag.FlagSet) map[string]bool {
+	set := map[string]bool{}
+	fs.Visit(func(f *flag.Flag) {
+		set[f.Name] = true
+	})
+	return set
+}
+
 func printHelp() {
 	cats := expense.ValidCategories()
 	names := make([]string, len(cats))
@@ -134,7 +167,7 @@ func printHelp() {
 	fmt.Println()
 	fmt.Println("Commands:")
 	fmt.Println("  add           Add a new expense          (--description, --amount, --category, --date)")
-	fmt.Println("  update        Update an expense          (--id, --description, --amount, --category, --date)")
+	fmt.Println("  update        Update an expense          (--id, then any of --description, --amount, --category, --date)")
 	fmt.Println("  delete        Delete an expense          (--id)")
 	fmt.Println("  list          List all expenses")
 	fmt.Println("  list-category List expenses by category  (--category)")

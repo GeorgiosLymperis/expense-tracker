@@ -16,6 +16,13 @@ func (r *fakeRepo) Add(e *Expense) error {
 	return nil
 }
 
+func (r *fakeRepo) Get(id int) (Expense, error) {
+	if id < 1 || id > len(r.records) {
+		return Expense{}, fmt.Errorf("invalid id %d", id)
+	}
+	return r.records[id-1], nil
+}
+
 func (r *fakeRepo) Delete(id int) error {
 	if id < 1 || id > len(r.records) {
 		return fmt.Errorf("invalid id %d", id)

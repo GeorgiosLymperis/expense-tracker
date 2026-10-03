@@ -32,7 +32,7 @@ func TestAddRouting(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// success message is printed to stdout; routing is verified via recorded fields below
-	if svc.addedAmount != 20 {
+	if svc.addedAmount != expense.Amount(20*100) {
 		t.Errorf("expected amount 20, got %v", svc.addedAmount)
 	}
 	if svc.addedDescription != "Lunch" {
@@ -81,7 +81,7 @@ func TestUpdateRouting(t *testing.T) {
 	if svc.updatedID != 2 {
 		t.Errorf("expected updated id 2, got %v", svc.updatedID)
 	}
-	if svc.updatedAmount != 15 {
+	if svc.updatedAmount != expense.Amount(15*100) {
 		t.Errorf("expected updated amount 15, got %v", svc.updatedAmount)
 	}
 	if svc.updatedDescription != "Brunch" {
@@ -96,7 +96,7 @@ func TestUpdateRequiresId(t *testing.T) {
 }
 
 func TestListCallsPrint(t *testing.T) {
-	lunch, _ := expense.NewExpense(20, "Lunch", expense.Food,
+	lunch, _ := expense.NewExpense(expense.Amount(20*100), "Lunch", expense.Food,
 		expense.Date(time.Date(2026, 5, 28, 0, 0, 0, 0, time.UTC)))
 	svc := &fakeService{listResult: []expense.Expense{lunch}}
 
@@ -162,5 +162,38 @@ func TestServiceErrorPropagates(t *testing.T) {
 	svc := &fakeService{cmdErr: errors.New("service error")}
 	if err := Run(svc, []string{"add", "--description", "Lunch", "--amount", "20", "--date", "2026-05-28"}); err == nil {
 		t.Error("expected service error to propagate, got nil")
+	}
+}
+
+func TestUpdateKeepsFieldsNotGiven(t *testing.T) {
+	day := expense.Date(time.Date(2026, 5, 28, 0, 0, 0, 0, time.UTC))
+	rent, _ := expense.NewExpense(expense.Amount(500*100), "Rent", expense.Housing, day)
+	svc := &fakeService{getResult: rent}
+
+	if err := Run(svc, []string{"update", "--id", "1", "--amount", "450"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if svc.updatedAmount != expense.Amount(450*100) {
+		t.Errorf("expected amount 450.00, got %v", svc.updatedAmount)
+	}
+	if svc.updatedDescription != "Rent" || svc.updatedCategory != expense.Housing || svc.updatedDate != day {
+		t.Errorf("expected other fields kept, got %q %v %v", svc.updatedDescription, svc.updatedCategory, svc.updatedDate)
+	}
+}
+
+func TestUpdateUnknownIDFails(t *testing.T) {
+	svc := &fakeService{getErr: expense.ErrNotFound}
+	if err := Run(svc, []string{"update", "--id", "9", "--amount", "1"}); err == nil {
+		t.Error("expected error for unknown id, got nil")
+	}
+	if svc.updatedID != 0 {
+		t.Error("expected no update for unknown id")
+	}
+}
+
+func TestAddRejectsBadAmount(t *testing.T) {
+	svc := &fakeService{}
+	if err := Run(svc, []string{"add", "--amount", "12.345"}); err == nil {
+		t.Error("expected error for amount with 3 decimals, got nil")
 	}
 }
