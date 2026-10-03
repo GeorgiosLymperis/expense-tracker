@@ -1,6 +1,6 @@
 # Expense Tracker
 
-A command-line application to manage your personal finances. Add, update, delete and summarise expenses stored as JSON.
+A command-line application to manage your personal finances. Add, update, delete and summarise expenses stored as JSON, from the terminal or through an [HTTP API](#http-api).
 
 ## Build
 
@@ -92,6 +92,100 @@ Exports all expenses to `expenses.csv` in the current directory.
 ./tracker help
 ```
 
+## HTTP API
+
+Start the server:
+
+```bash
+./tracker serve
+```
+
+It listens on `http://localhost:8080` and uses the same `expenses.json` file as the CLI. Requests and responses are JSON. Errors are returned as a plain-text message with the matching status code.
+
+| Method   | Path             | Description           |
+|----------|------------------|-----------------------|
+| `GET`    | `/expenses`      | List all expenses     |
+| `POST`   | `/expenses`      | Add an expense        |
+| `PUT`    | `/expenses/{id}` | Replace an expense    |
+| `DELETE` | `/expenses/{id}` | Delete an expense     |
+
+### Expense IDs
+
+An expense's ID is its position in the list returned by `GET /expenses`, starting at 1. New expenses are inserted in date order, so IDs can change after an expense is added or deleted. An update keeps the expense at the same position, even if its date changes. Fetch the list again before calling `PUT` or `DELETE`.
+
+### GET /expenses
+
+Returns all expenses in ID order. Returns `[]` when there are none.
+
+```bash
+curl http://localhost:8080/expenses
+```
+
+```json
+[
+  {"id": 1, "amount": 12.5, "date": "2026-05-01", "description": "Lunch", "category": "Food"},
+  {"id": 2, "amount": 50, "date": "2026-05-28", "description": "Coursera", "category": "Education"}
+]
+```
+
+**Responses**
+- `200 OK`: array of expenses
+- `500 Internal Server Error`: the expenses file could not be read
+
+### POST /expenses
+
+Adds an expense.
+
+**Body**
+
+| Field         | Type   | Required | Default   | Notes                                  |
+|---------------|--------|----------|-----------|----------------------------------------|
+| `amount`      | number | yes      |           | Must be 0 or more                      |
+| `description` | string | no       | `Unknown` |                                        |
+| `category`    | string | no       | `Unknown` | One of the [categories](#categories)   |
+| `date`        | string | no       | today     | `YYYY-MM-DD`                           |
+
+```bash
+curl -X POST http://localhost:8080/expenses \
+  -H 'Content-Type: application/json' \
+  -d '{"amount": 12.5, "description": "Lunch", "category": "Food", "date": "2026-05-01"}'
+```
+
+**Responses**
+- `201 Created`: no body
+- `400 Bad Request`: invalid JSON, negative amount, unknown category, or date not in `YYYY-MM-DD` format
+- `500 Internal Server Error`: the expense could not be saved
+
+### PUT /expenses/{id}
+
+Replaces the expense with the given ID. The body is the same as for `POST /expenses`, with the same defaults: a field you leave out is reset to its default, not kept from the old expense.
+
+```bash
+curl -X PUT http://localhost:8080/expenses/1 \
+  -H 'Content-Type: application/json' \
+  -d '{"amount": 15, "description": "Brunch", "category": "Food", "date": "2026-05-01"}'
+```
+
+**Responses**
+- `200 OK`: no body
+- `400 Bad Request`: ID is not a number, or the body is invalid (same rules as `POST`)
+- `404 Not Found`: no expense with that ID
+- `500 Internal Server Error`: the expense could not be saved
+
+### DELETE /expenses/{id}
+
+Deletes the expense with the given ID.
+
+```bash
+curl -X DELETE http://localhost:8080/expenses/1
+```
+
+**Responses**
+- `204 No Content`: no body
+- `400 Bad Request`: ID is not a number
+- `404 Not Found`: no expense with that ID
+- `500 Internal Server Error`: the expense could not be deleted
+
 ## Categories
 
 | Category      |
@@ -100,6 +194,7 @@ Exports all expenses to `expenses.csv` in the current directory.
 | Clothing      |
 | Education     |
 | Entertainment |
+| Fitness       |
 | Food          |
 | Gifts         |
 | Health        |
@@ -107,6 +202,7 @@ Exports all expenses to `expenses.csv` in the current directory.
 | Savings       |
 | Social        |
 | Subscriptions |
+| Supplements   |
 | Transport     |
 | Travel        |
 | Unknown       |

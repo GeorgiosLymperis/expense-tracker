@@ -1,6 +1,7 @@
 package expense
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -113,6 +114,20 @@ type Expense struct {
 	date        Date
 	description string
 	category    Category
+}
+
+func (e Expense) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Amount      float32  `json:"amount"`
+		Date        Date     `json:"date"`
+		Description string   `json:"description"`
+		Category    Category `json:"category"`
+	}{
+		Amount:      e.amount,
+		Date:        e.date,
+		Description: e.description,
+		Category:    e.category,
+	})
 }
 
 func NewExpense(amount float32, description string, category Category, date Date) (Expense, error) {
