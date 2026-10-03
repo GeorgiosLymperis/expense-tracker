@@ -1,0 +1,9 @@
+# Built binary
+/tracker
+
+# Personal data and exports
+expenses.json
+expenses.csv
+
+# Test coverage output
+coverage.txt

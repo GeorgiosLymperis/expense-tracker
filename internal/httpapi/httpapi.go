@@ -24,14 +24,6 @@ type addExpenseRequest struct {
 	Date        string           `json:"date"`
 }
 
-type expenseResponse struct {
-	ID          int              `json:"id"`
-	Amount      float32          `json:"amount"`
-	Date        expense.Date     `json:"date"`
-	Description string           `json:"description"`
-	Category    expense.Category `json:"category"`
-}
-
 type statusRecorder struct {
 	http.ResponseWriter
 	status int
@@ -80,18 +72,10 @@ func (a *api) handleList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error fetching expenses", http.StatusInternalServerError)
 		return
 	}
-	// IDs are 1-based positions in storage order, matching the CLI and PUT/DELETE.
-	resp := make([]expenseResponse, 0, len(expenses))
-	for i, e := range expenses {
-		resp = append(resp, expenseResponse{
-			ID:          i + 1,
-			Amount:      e.ExpenseAmount(),
-			Date:        e.ExpenseDate(),
-			Description: e.ExpenseDescription(),
-			Category:    e.ExpenseCategory(),
-		})
+	if expenses == nil {
+		expenses = []expense.Expense{}
 	}
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
+	if err := json.NewEncoder(w).Encode(expenses); err != nil {
 		http.Error(w, "error encoding expenses", http.StatusInternalServerError)
 		return
 	}

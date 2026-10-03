@@ -21,6 +21,7 @@ func NewJSONRepo(f *os.File) *JSONRepo {
 }
 
 type expenseRecord struct {
+	ID          int              `json:"id"`
 	Amount      float32          `json:"amount"`
 	Date        expense.Date     `json:"date"`
 	Description string           `json:"description"`
@@ -29,11 +30,50 @@ type expenseRecord struct {
 
 func newExpenseRecord(e *expense.Expense) expenseRecord {
 	return expenseRecord{
+		ID:          e.ID(),
 		Amount:      e.ExpenseAmount(),
 		Date:        e.ExpenseDate(),
 		Description: e.ExpenseDescription(),
 		Category:    e.ExpenseCategory(),
 	}
+}
+
+func (rec expenseRecord) toExpense() (expense.Expense, error) {
+	e, err := expense.NewExpense(rec.Amount, rec.Description, rec.Category, rec.Date)
+	if err != nil {
+		return expense.Expense{}, err
+	}
+	return e.WithID(rec.ID), nil
+}
+
+// nextID returns one more than the highest ID in use. Deleting other
+// expenses never changes an expense's ID; only the highest ID can be reused
+// after it is deleted.
+func nextID(expenses []expenseRecord) int {
+	maxID := 0
+	for _, e := range expenses {
+		maxID = max(maxID, e.ID)
+	}
+	return maxID + 1
+}
+
+// indexOfID returns the position of the expense with the given ID, or -1.
+func indexOfID(expenses []expenseRecord, id int) int {
+	return slices.IndexFunc(expenses, func(e expenseRecord) bool { return e.ID == id })
+}
+
+// assignMissingIDs gives an ID to every record without one, in file order.
+// It migrates files written before IDs were stored and reports whether
+// anything changed.
+func assignMissingIDs(expenses []expenseRecord) bool {
+	changed := false
+	for i := range expenses {
+		if expenses[i].ID == 0 {
+			expenses[i].ID = nextID(expenses)
+			changed = true
+		}
+	}
+	return changed
 }
 
 func (r *JSONRepo) Add(e *expense.Expense) error {
@@ -46,6 +86,7 @@ func (r *JSONRepo) Add(e *expense.Expense) error {
 	defer file.Close()
 
 	newRecord := newExpenseRecord(e)
+	newRecord.ID = nextID(expenses)
 	expenses = append(expenses, newRecord)
 
 	slices.SortFunc(expenses, func(a, b expenseRecord) int {
@@ -64,10 +105,11 @@ func (r *JSONRepo) Delete(id int) error {
 	}
 	defer file.Close()
 
-	if id > len(expenses) || id < 1 {
-		return fmt.Errorf("Invalid ID. Please provide a valid expense ID [1, %v].", len(expenses))
+	i := indexOfID(expenses, id)
+	if i == -1 {
+		return fmt.Errorf("Invalid ID: no expense with ID %d", id)
 	}
-	expenses = slices.Delete(expenses, id-1, id)
+	expenses = slices.Delete(expenses, i, i+1)
 
 	return updateJsonRepoFileOk(file, &expenses)
 }
@@ -86,6 +128,13 @@ func openJsonRepoFile(name string, r *[]expenseRecord) (*os.File, error) {
 	if len(byteValue) != 0 {
 		if err := json.Unmarshal(byteValue, &r); err != nil {
 			return nil, fmt.Errorf("Error unmarshalling:%v", err)
+		}
+	}
+
+	if assignMissingIDs(*r) {
+		if err := updateJsonRepoFileOk(file, r); err != nil {
+			file.Close()
+			return nil, err
 		}
 	}
 	return file, nil
@@ -117,11 +166,13 @@ func (r *JSONRepo) Update(id int, e *expense.Expense) error {
 	}
 	defer file.Close()
 
-	if id > len(expenses) || id < 1 {
-		return fmt.Errorf("Invalid ID. Please provide a valid expense ID [1, %v].", len(expenses))
+	i := indexOfID(expenses, id)
+	if i == -1 {
+		return fmt.Errorf("Invalid ID: no expense with ID %d", id)
 	}
 
-	expenses[id-1] = newExpenseRecord(e)
+	expenses[i] = newExpenseRecord(e)
+	expenses[i].ID = id
 	return updateJsonRepoFileOk(file, &expenses)
 }
 
@@ -137,11 +188,7 @@ func (r *JSONRepo) ListByCategory(c expense.Category) ([]expense.Expense, error)
 	var expensesInCategory []expense.Expense
 	for _, e := range expenses {
 		if e.Category == c {
-			rec, err := expense.NewExpense(
-				e.Amount,
-				e.Description,
-				e.Category,
-				e.Date)
+			rec, err := e.toExpense()
 			if err != nil {
 				return nil, err
 			}
@@ -167,11 +214,7 @@ func (r *JSONRepo) ListByMonth(m time.Month, y int) ([]expense.Expense, error) {
 	var expensesInMonth []expense.Expense
 	for _, e := range expenses {
 		if e.Date.Month() == m && e.Date.Year() == y {
-			rec, err := expense.NewExpense(
-				e.Amount,
-				e.Description,
-				e.Category,
-				e.Date)
+			rec, err := e.toExpense()
 			if err != nil {
 				return nil, err
 			}
@@ -197,11 +240,7 @@ func (r *JSONRepo) ListByYear(y int) ([]expense.Expense, error) {
 	var expensesInYear []expense.Expense
 	for _, e := range expenses {
 		if e.Date.Year() == y {
-			rec, err := expense.NewExpense(
-				e.Amount,
-				e.Description,
-				e.Category,
-				e.Date)
+			rec, err := e.toExpense()
 			if err != nil {
 				return nil, err
 			}
@@ -227,11 +266,7 @@ func (r *JSONRepo) ListByDate(d expense.Date) ([]expense.Expense, error) {
 	var expensesInDate []expense.Expense
 	for _, e := range expenses {
 		if e.Date == d {
-			rec, err := expense.NewExpense(
-				e.Amount,
-				e.Description,
-				e.Category,
-				e.Date)
+			rec, err := e.toExpense()
 			if err != nil {
 				return nil, err
 			}
@@ -280,11 +315,7 @@ func (r *JSONRepo) ListAll() ([]expense.Expense, error) {
 
 	var allExpenses []expense.Expense
 	for _, e := range expenses {
-		rec, err := expense.NewExpense(
-			e.Amount,
-			e.Description,
-			e.Category,
-			e.Date)
+		rec, err := e.toExpense()
 		if err != nil {
 			return nil, err
 		}

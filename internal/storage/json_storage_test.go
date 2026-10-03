@@ -138,10 +138,10 @@ func TestJSONRepoDelete(t *testing.T) {
 		expense.Date(time.Date(2023, 2, 3, 0, 0, 0, 0, time.UTC)))
 
 	repo := NewJSONRepo(f)
-	repo.Add(&newer)
-	repo.Add(&old)
+	repo.Add(&newer) // ID 1
+	repo.Add(&old)   // ID 2, but sorted first
 
-	if err := repo.Delete(1); err != nil {
+	if err := repo.Delete(2); err != nil {
 		t.Fatalf("Could not delete expense: %v", err)
 	}
 
@@ -356,4 +356,108 @@ func TestListAll(t *testing.T) {
 	compareRecExpense(t, newExpenseRecord(&e3), expenses[0])
 	compareRecExpense(t, newExpenseRecord(&e2), expenses[1])
 	compareRecExpense(t, newExpenseRecord(&e1), expenses[2])
+}
+
+func readRecords(t *testing.T, f *os.File) []expenseRecord {
+	t.Helper()
+	byteValue, err := os.ReadFile(f.Name())
+	if err != nil {
+		t.Fatalf("Could not read file: %v", err)
+	}
+	var expenses []expenseRecord
+	if err := json.Unmarshal(byteValue, &expenses); err != nil {
+		t.Fatalf("Could not unmarshal: %v", err)
+	}
+	return expenses
+}
+
+func TestJSONRepoIDsSurviveSortingAndDeletes(t *testing.T) {
+	f := tempJSONFile(t)
+	e1, _ := expense.NewExpense(10, "A", expense.Food,
+		expense.Date(time.Date(2023, 3, 1, 0, 0, 0, 0, time.UTC)))
+	e2, _ := expense.NewExpense(20, "B", expense.Food,
+		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
+	e3, _ := expense.NewExpense(30, "C", expense.Food,
+		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
+
+	repo := NewJSONRepo(f)
+	repo.Add(&e1) // ID 1
+	repo.Add(&e2) // ID 2, sorted before A
+	if err := repo.Delete(1); err != nil {
+		t.Fatalf("Could not delete expense: %v", err)
+	}
+	repo.Add(&e3) // ID 3
+
+	got := map[string]int{}
+	for _, rec := range readRecords(t, f) {
+		got[rec.Description] = rec.ID
+	}
+	want := map[string]int{"B": 2, "C": 3}
+	if len(got) != len(want) || got["B"] != want["B"] || got["C"] != want["C"] {
+		t.Errorf("IDs should be %v. Got %v", want, got)
+	}
+}
+
+func TestJSONRepoUpdateKeepsID(t *testing.T) {
+	f := tempJSONFile(t)
+	e1, _ := expense.NewExpense(10, "A", expense.Food,
+		expense.Date(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)))
+	e2, _ := expense.NewExpense(20, "B", expense.Food,
+		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
+	updated, _ := expense.NewExpense(25, "B2", expense.Food,
+		expense.Date(time.Date(2023, 2, 1, 0, 0, 0, 0, time.UTC)))
+
+	repo := NewJSONRepo(f)
+	repo.Add(&e1)
+	repo.Add(&e2)
+	if err := repo.Update(2, &updated); err != nil {
+		t.Fatalf("Could not update expense: %v", err)
+	}
+
+	expenses, err := repo.ListAll()
+	if err != nil {
+		t.Fatalf("Could not list expenses: %v", err)
+	}
+	for _, e := range expenses {
+		if e.ExpenseDescription() == "B2" && e.ID() != 2 {
+			t.Errorf("Updated expense should keep ID 2. Got %v", e.ID())
+		}
+	}
+}
+
+func TestJSONRepoUnknownID(t *testing.T) {
+	f := tempJSONFile(t)
+	e, _ := expense.NewExpense(10, "A", expense.Food, expense.Date(time.Now()))
+
+	repo := NewJSONRepo(f)
+	repo.Add(&e)
+	if err := repo.Delete(5); err == nil {
+		t.Error("Expected error deleting unknown ID, got nil")
+	}
+	if err := repo.Update(5, &e); err == nil {
+		t.Error("Expected error updating unknown ID, got nil")
+	}
+}
+
+func TestJSONRepoMigratesFileWithoutIDs(t *testing.T) {
+	f := tempJSONFile(t)
+	old := `[{"amount":1,"date":"2023-01-01","description":"A","category":"Food"},` +
+		`{"amount":2,"date":"2023-01-02","description":"B","category":"Food"}]`
+	if _, err := f.WriteString(old); err != nil {
+		t.Fatalf("Could not write file: %v", err)
+	}
+
+	repo := NewJSONRepo(f)
+	expenses, err := repo.ListAll()
+	if err != nil {
+		t.Fatalf("Could not list expenses: %v", err)
+	}
+	if expenses[0].ID() != 1 || expenses[1].ID() != 2 {
+		t.Errorf("IDs should be 1, 2. Got %v, %v", expenses[0].ID(), expenses[1].ID())
+	}
+
+	recs := readRecords(t, f)
+	if recs[0].ID != 1 || recs[1].ID != 2 {
+		t.Errorf("Migrated IDs should be saved to the file. Got %v, %v", recs[0].ID, recs[1].ID)
+	}
 }

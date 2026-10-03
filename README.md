@@ -111,11 +111,11 @@ It listens on `http://localhost:8080` and uses the same `expenses.json` file as 
 
 ### Expense IDs
 
-An expense's ID is its position in the list returned by `GET /expenses`, starting at 1. New expenses are inserted in date order, so IDs can change after an expense is added or deleted. An update keeps the expense at the same position, even if its date changes. Fetch the list again before calling `PUT` or `DELETE`.
+Every expense has an `id`, assigned when it is added and saved in `expenses.json`. It is the same ID the CLI shows, and it doesn't change when other expenses are added, updated or deleted. A new expense gets the highest ID in use plus one.
 
 ### GET /expenses
 
-Returns all expenses in ID order. Returns `[]` when there are none.
+Returns all expenses in the order they are stored: new expenses are inserted by date, and an update keeps an expense in place. Returns `[]` when there are none.
 
 ```bash
 curl http://localhost:8080/expenses

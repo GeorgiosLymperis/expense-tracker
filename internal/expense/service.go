@@ -112,9 +112,9 @@ func (s service) PrintExpenses(expenses []Expense) error {
 	fmt.Println(sep)
 	fmt.Println("| ID  | Date       | Category             | Description          |   Amount |")
 	fmt.Println(sep)
-	for i, e := range expenses {
+	for _, e := range expenses {
 		fmt.Printf("| %03d | %10s | %-20s | %-20s | €%7.2f |\n",
-			i+1, e.ExpenseDate(),
+			e.ID(), e.ExpenseDate(),
 			truncate(string(e.ExpenseCategory()), 20),
 			truncate(e.ExpenseDescription(), 20),
 			e.ExpenseAmount())

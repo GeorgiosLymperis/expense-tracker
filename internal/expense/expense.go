@@ -110,6 +110,7 @@ func validateAmount(amount float32) error {
 }
 
 type Expense struct {
+	id          int
 	amount      float32
 	date        Date
 	description string
@@ -118,11 +119,13 @@ type Expense struct {
 
 func (e Expense) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
+		ID          int      `json:"id"`
 		Amount      float32  `json:"amount"`
 		Date        Date     `json:"date"`
 		Description string   `json:"description"`
 		Category    Category `json:"category"`
 	}{
+		ID:          e.id,
 		Amount:      e.amount,
 		Date:        e.date,
 		Description: e.description,
@@ -140,6 +143,16 @@ func NewExpense(amount float32, description string, category Category, date Date
 		date:        date,
 		description: description,
 		category:    category}, nil
+}
+
+// WithID returns a copy of e with its ID set. IDs are assigned by the repository.
+func (e Expense) WithID(id int) Expense {
+	e.id = id
+	return e
+}
+
+func (e Expense) ID() int {
+	return e.id
 }
 
 func (e Expense) ExpenseAmount() float32 {
