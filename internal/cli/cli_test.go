@@ -197,3 +197,43 @@ func TestAddRejectsBadAmount(t *testing.T) {
 		t.Error("expected error for amount with 3 decimals, got nil")
 	}
 }
+
+func TestListLastShowsMostRecent(t *testing.T) {
+	var all []expense.Expense
+	for d := 1; d <= 5; d++ {
+		e, _ := expense.NewExpense(expense.Amount(d*100), "E", expense.Food,
+			expense.Date(time.Date(2026, 5, d, 0, 0, 0, 0, time.UTC)))
+		all = append(all, e)
+	}
+
+	for _, cmd := range []string{"list", "list-category", "list-month", "list-year"} {
+		svc := &fakeService{listResult: all}
+		if err := Run(svc, []string{cmd, "--last", "2"}); err != nil {
+			t.Fatalf("%s: unexpected error: %v", cmd, err)
+		}
+		if len(svc.printedExpenses) != 2 {
+			t.Fatalf("%s: expected 2 printed expenses, got %d", cmd, len(svc.printedExpenses))
+		}
+		if svc.printedExpenses[0].ExpenseDate() != all[3].ExpenseDate() ||
+			svc.printedExpenses[1].ExpenseDate() != all[4].ExpenseDate() {
+			t.Errorf("%s: expected the 2 most recent expenses", cmd)
+		}
+	}
+}
+
+func TestListLastLargerThanListShowsAll(t *testing.T) {
+	e, _ := expense.NewExpense(expense.Amount(100), "E", expense.Food, expense.Date(time.Now()))
+	svc := &fakeService{listResult: []expense.Expense{e}}
+	if err := Run(svc, []string{"list", "--last", "20"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(svc.printedExpenses) != 1 {
+		t.Errorf("expected 1 printed expense, got %d", len(svc.printedExpenses))
+	}
+}
+
+func TestListLastNegativeFails(t *testing.T) {
+	if err := Run(&fakeService{}, []string{"list", "--last", "-1"}); err == nil {
+		t.Error("expected error for negative --last, got nil")
+	}
+}

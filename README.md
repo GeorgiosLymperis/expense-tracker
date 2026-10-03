@@ -48,6 +48,15 @@ Only the flags you pass are changed. For example, `./tracker update --id 1 --amo
 ./tracker list
 ```
 
+Show only the most recent expenses with `--last`. It works with every `list` command:
+
+```bash
+./tracker list --last 20
+./tracker list-category --category Food --last 5
+```
+
+The total row then covers only the expenses shown.
+
 ### List by category
 
 ```bash

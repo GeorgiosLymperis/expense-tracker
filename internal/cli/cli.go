@@ -28,9 +28,13 @@ func Run(svc expense.Service, args []string) error {
 	id := fs.Int("id", 0, "Expense ID")
 	month := fs.Int("month", int(time.Now().Month()), "Month (1-12)")
 	year := fs.Int("year", time.Now().Year(), "Year")
+	last := fs.Int("last", 0, "Show only the N most recent expenses (0 = all)")
 
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
+	}
+	if *last < 0 {
+		return fmt.Errorf("--last must be 0 or more")
 	}
 
 	parseDate := func() (expense.Date, error) {
@@ -38,6 +42,21 @@ func Run(svc expense.Service, args []string) error {
 	}
 	parseAmount := func() (expense.Amount, error) {
 		return expense.ParseAmount(*amount)
+	}
+	// printList prints the expenses, keeping only the last N when --last is set.
+	// Expenses are stored in date order, so these are the most recent ones.
+	printList := func(expenses []expense.Expense) error {
+		total := len(expenses)
+		if *last > 0 && *last < total {
+			expenses = expenses[total-*last:]
+		}
+		if err := svc.PrintExpenses(expenses); err != nil {
+			return err
+		}
+		if len(expenses) < total {
+			fmt.Printf("Showing the last %d of %d expenses.\n", len(expenses), total)
+		}
+		return nil
 	}
 
 	switch args[0] {
@@ -104,7 +123,7 @@ func Run(svc expense.Service, args []string) error {
 		if err != nil {
 			return err
 		}
-		return svc.PrintExpenses(expenses)
+		return printList(expenses)
 	case "summary":
 		monthSet := setFlags(fs)["month"]
 		var expenses []expense.Expense
@@ -128,19 +147,19 @@ func Run(svc expense.Service, args []string) error {
 		if err != nil {
 			return err
 		}
-		return svc.PrintExpenses(expenses)
+		return printList(expenses)
 	case "list-month":
 		expenses, err := svc.ListByMonth(time.Month(*month), *year)
 		if err != nil {
 			return err
 		}
-		return svc.PrintExpenses(expenses)
+		return printList(expenses)
 	case "list-year":
 		expenses, err := svc.ListByYear(*year)
 		if err != nil {
 			return err
 		}
-		return svc.PrintExpenses(expenses)
+		return printList(expenses)
 	default:
 		return fmt.Errorf("unknown command %q. Run 'expense-tracker help' for usage", args[0])
 	}
@@ -169,10 +188,10 @@ func printHelp() {
 	fmt.Println("  add           Add a new expense          (--description, --amount, --category, --date)")
 	fmt.Println("  update        Update an expense          (--id, then any of --description, --amount, --category, --date)")
 	fmt.Println("  delete        Delete an expense          (--id)")
-	fmt.Println("  list          List all expenses")
-	fmt.Println("  list-category List expenses by category  (--category)")
-	fmt.Println("  list-month    List expenses by month     (--month, --year)")
-	fmt.Println("  list-year     List expenses by year      (--year)")
+	fmt.Println("  list          List all expenses          (--last)")
+	fmt.Println("  list-category List expenses by category  (--category, --last)")
+	fmt.Println("  list-month    List expenses by month     (--month, --year, --last)")
+	fmt.Println("  list-year     List expenses by year      (--year, --last)")
 	fmt.Println("  summary       Total of all expenses")
 	fmt.Println("  summary       Total for a month          (--month)")
 	fmt.Println("  export        Export expenses to CSV")
