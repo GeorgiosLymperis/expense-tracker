@@ -45,22 +45,26 @@ func logging(next http.Handler) http.Handler {
 	})
 }
 
-func Run(svc expense.Service, addr string) error {
+func newHandler(svc expense.Service) http.Handler {
 	a := &api{svc: svc}
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /expenses", logging(http.HandlerFunc(a.handleList)))
+	mux.Handle("GET /expenses/{id}", logging(http.HandlerFunc(a.handleGet)))
 	mux.Handle("POST /expenses", logging(http.HandlerFunc(a.handleAdd)))
 	mux.Handle("PUT /expenses/{id}", logging(http.HandlerFunc(a.handleUpdate)))
 	mux.Handle("DELETE /expenses/{id}", logging(http.HandlerFunc(a.handleDelete)))
+	return mux
+}
 
+func Run(svc expense.Service, addr string) error {
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
 	log.Printf("serving on http://%s", ln.Addr())
 
-	return http.Serve(ln, mux)
+	return http.Serve(ln, newHandler(svc))
 }
 
 func (a *api) handleList(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +81,31 @@ func (a *api) handleList(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewEncoder(w).Encode(expenses); err != nil {
 		http.Error(w, "error encoding expenses", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (a *api) handleGet(w http.ResponseWriter, r *http.Request) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	e, err := a.svc.GetExpense(id)
+	if err != nil {
+		if errors.Is(err, expense.ErrNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		http.Error(w, "error fetching expense", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(e); err != nil {
+		http.Error(w, "error encoding expense", http.StatusInternalServerError)
 		return
 	}
 }

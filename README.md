@@ -107,6 +107,7 @@ It listens on `http://localhost:8080` and uses the same `expenses.json` file as 
 | Method   | Path             | Description           |
 |----------|------------------|-----------------------|
 | `GET`    | `/expenses`      | List all expenses     |
+| `GET`    | `/expenses/{id}` | Get one expense       |
 | `POST`   | `/expenses`      | Add an expense        |
 | `PUT`    | `/expenses/{id}` | Replace an expense    |
 | `DELETE` | `/expenses/{id}` | Delete an expense     |
@@ -125,13 +126,31 @@ curl http://localhost:8080/expenses
 
 ```json
 [
-  {"id": 1, "amount": 12.5, "date": "2026-05-01", "description": "Lunch", "category": "Food"},
-  {"id": 2, "amount": 50, "date": "2026-05-28", "description": "Coursera", "category": "Education"}
+  {"id": 1, "amount": 12.50, "date": "2026-05-01", "description": "Lunch", "category": "Food"},
+  {"id": 2, "amount": 50.00, "date": "2026-05-28", "description": "Coursera", "category": "Education"}
 ]
 ```
 
 **Responses**
 - `200 OK`: array of expenses
+- `500 Internal Server Error`: the expenses file could not be read
+
+### GET /expenses/{id}
+
+Returns the expense with the given ID.
+
+```bash
+curl http://localhost:8080/expenses/1
+```
+
+```json
+{"id": 1, "amount": 12.50, "date": "2026-05-01", "description": "Lunch", "category": "Food"}
+```
+
+**Responses**
+- `200 OK`: the expense
+- `400 Bad Request`: ID is not a number
+- `404 Not Found`: no expense with that ID
 - `500 Internal Server Error`: the expenses file could not be read
 
 ### POST /expenses
